@@ -1,0 +1,9 @@
+# Ignore massive installation folders
+node_modules/
+venv/
+__pycache__/
+
+# NEVER upload secret API keys
+.env
+.vercel
+.env*.local

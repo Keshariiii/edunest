@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+/* Global Premium Dark-Mode IDE Scrollbars */
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #262626 transparent;
+}
+
+/* Force dark mode color scheme at the browser level */
+html {
+  color-scheme: dark;
+}
+
+/* Webkit (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html::-webkit-scrollbar, body::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html::-webkit-scrollbar-track, body::-webkit-scrollbar-track {
+  background: #0a0a0a; /* Matches your main bg */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #262626;
+  border-radius: 10px;
+}
+
+html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
+  background-color: #262626;
+  border-radius: 10px;
+  border: 2px solid #0a0a0a; /* Creates a nice padded effect */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #404040;
+}
+
+html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover {
+  background-color: #404040;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+
+@media print {
+  /* Force the browser to render background colors and images */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Apply the dark background to the absolute root elements */
+  html, body, #root {
+    background-color: #0a0a0a !important; /* Your main background color */
+    color: #f3f4f6 !important; /* text-gray-100 */
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}

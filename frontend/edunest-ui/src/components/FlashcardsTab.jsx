@@ -1,0 +1,44 @@
+import React, { useState } from 'react';
+import Flashcard from './Flashcard';
+
+const FlashcardsTab = ({ flashcards }) => {
+  const [isFlashcardFlipped, setIsFlashcardFlipped] = useState(false);
+  const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
+  const [flashcardDirection, setFlashcardDirection] = useState('next');
+
+  return (
+    <div className="max-w-2xl mx-auto flex flex-col items-center overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {flashcards && flashcards.length > 0 ? (
+        <>
+          <Flashcard
+            key={currentFlashcardIndex}
+            front={flashcards[currentFlashcardIndex]?.front}
+            back={flashcards[currentFlashcardIndex]?.back}
+            index={currentFlashcardIndex}
+            total={flashcards.length}
+            direction={flashcardDirection}
+            isFlipped={isFlashcardFlipped}
+            setIsFlipped={setIsFlashcardFlipped}
+          />
+          <div className="flex gap-2 mt-8 w-full justify-center px-4 font-mono">
+            <button onClick={() => { setIsFlashcardFlipped(false); setFlashcardDirection('prev'); setCurrentFlashcardIndex(Math.max(0, currentFlashcardIndex - 1)); }} disabled={currentFlashcardIndex === 0} className="px-5 py-2.5 bg-[#121212] text-gray-400 border border-[#262626] rounded-md text-xs hover:text-white hover:border-[#404040] disabled:opacity-30 transition-all">Prev</button>
+            <button onClick={() => { setIsFlashcardFlipped(false); setFlashcardDirection('next'); setCurrentFlashcardIndex(Math.min((flashcards.length || 1) - 1, currentFlashcardIndex + 1)); }} disabled={currentFlashcardIndex === (flashcards.length || 1) - 1} className="px-5 py-2.5 bg-white text-black rounded-md font-bold text-xs hover:bg-gray-200 disabled:opacity-30 transition-all w-24">Next</button>
+          </div>
+        </>
+      ) : (
+        <div className="w-full p-12 bg-[#121212] border border-[#262626] rounded-xl transition-colors duration-300 flex flex-col items-center justify-center">
+          <div className="font-mono text-sm text-gray-400 text-left bg-[#0a0a0a] p-6 rounded-md border border-[#262626] w-full max-w-md shadow-inner">
+            <div className="mb-2">
+              <span className="text-gray-600 mr-2">{'>'}</span>Analysis complete.
+            </div>
+            <div>
+              <span className="text-gray-600 mr-2">{'>'}</span>Could not extract clear Q/A pairs from the source document.
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default FlashcardsTab;
