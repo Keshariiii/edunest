@@ -36,7 +36,8 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
     formData.append("num_questions", quizConfig.numQuestions);
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/generate-quiz`, { method: "POST", body: formData });
+      const backendHost = window.location.hostname;
+      const response = await fetch(`http://${backendHost}:8000/api/generate-quiz`, { method: "POST", body: formData });
 
       if (!response.ok) {
         const errorText = await response.text();

@@ -124,7 +124,8 @@ export default function App() {
     const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds timeout
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/generate-study-material`, {
+      const backendHost = window.location.hostname;
+      const response = await fetch(`http://${backendHost}:8000/api/generate-study-material`, {
         method: "POST",
         body: formData,
         signal: controller.signal
