@@ -223,7 +223,7 @@ async def generate_study_material(
             except httpx.TimeoutException as e:
                 print(f"Timeout on attempt {attempt + 1}: {e}")
                 if attempt < max_retries - 1:
-                    await asyncio.sleep(5)
+                    await asyncio.sleep(2)
                 else:
                     raise RuntimeError("Gemini API timed out after 5 minutes. Please try a smaller file.") from e
 
@@ -338,9 +338,9 @@ async def generate_quiz(
                 print(f"Stopping — batch {i+1} failed all retries.")
                 break
 
-            if i < len(batches) - 1:
-                print(f"Sleeping 15s between batches...")
-                await asyncio.sleep(15)
+            if (i < len(batches) - 1):
+                print(f"Sleeping 5s between batches...")
+                await asyncio.sleep(5)
 
         if len(all_mcqs) == 0:
             raise HTTPException(

@@ -72,7 +72,7 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
       setQuizLoadingStatus("Error: cd .. && retry");
       setTimeout(() => {
         setQuizData([]);
-        setQuizErrorMsg(error?.response?.data?.detail || error.message);
+        setQuizErrorMsg(error.message);
         setIsQuizGenerating(false);
       }, 1000);
     }
