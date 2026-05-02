@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Settings, XCircle, BrainCircuit, Timer, RotateCcw, Maximize, Minimize, BarChart3, Clock, Target, Award, CheckCircle2, Zap } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Settings, XCircle, BrainCircuit, Timer, RotateCcw, Maximize, Minimize, BarChart3, Clock, Target, Award, CheckCircle2, Zap, RefreshCw, TrendingUp } from 'lucide-react';
 import MathText from './MathText';
+import confetti from 'canvas-confetti';
 
-const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainerRef }) => {
+const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainerRef, onQuizComplete }) => {
   const [quizConfig, setQuizConfig] = useState({ examType: 'JEE Main', difficulty: 'Medium', numQuestions: 10 });
   const [quizData, setQuizData] = useState(null);
   const [isQuizGenerating, setIsQuizGenerating] = useState(false);
@@ -14,6 +15,7 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
   const [questionTimes, setQuestionTimes] = useState({});
   const [isQuizFinished, setIsQuizFinished] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   useEffect(() => {
     let interval;
@@ -116,6 +118,33 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
     return { correct, incorrect, skipped, score, maxScore, totalTime, accuracy };
   };
 
+  // Fire confetti + notify parent when quiz finishes
+  const handleQuizFinish = useCallback(() => {
+    setIsQuizFinished(true);
+    const stats = getQuizStats();
+    if (stats && stats.accuracy >= 80) {
+      confetti({ particleCount: 160, spread: 90, origin: { y: 0.6 }, colors: ['#6366f1', '#a78bfa', '#38bdf8', '#ffffff'] });
+      setTimeout(() => confetti({ particleCount: 80, spread: 60, origin: { y: 0.5 }, angle: 120 }), 300);
+      setTimeout(() => confetti({ particleCount: 80, spread: 60, origin: { y: 0.5 }, angle: 60 }), 600);
+    }
+    if (onQuizComplete && stats) {
+      onQuizComplete({
+        date: new Date().toISOString(),
+        subject,
+        examType: quizConfig.examType,
+        difficulty: quizConfig.difficulty,
+        score: stats.score,
+        maxScore: stats.maxScore,
+        accuracy: stats.accuracy,
+        correct: stats.correct,
+        incorrect: stats.incorrect,
+        skipped: stats.skipped,
+        totalTime: stats.totalTime,
+        numQuestions: quizData.length,
+      });
+    }
+  }, [quizData, selectedOptions, submittedAnswers, questionTimes, subject, quizConfig, onQuizComplete]);
+
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -131,24 +160,107 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
             <div className="p-3 bg-[#171717] border border-[#262626] rounded-md"><Settings className="text-gray-400" size={20} /></div>
             <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Configure Practice Test</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+          {/* ── Config grid ──────────────────────────────────────── */}
+          <div className="flex flex-col gap-8 mb-10">
+
+            {/* Exam Pattern */}
             <div>
-              <label className="block text-xs font-mono text-gray-500 uppercase tracking-widest mb-3">Exam_Pattern</label>
-              <select value={quizConfig.examType} onChange={(e) => setQuizConfig({ ...quizConfig, examType: e.target.value })} className="w-full bg-[#0a0a0a] p-3 rounded-md border border-[#262626] text-white text-sm outline-none focus:border-gray-500 transition-colors">
-                <option>JEE Main</option><option>JEE Advanced</option><option>NEET</option>
-              </select>
+              <label className="block text-xs font-mono text-gray-500 uppercase tracking-widest mb-3">
+                Exam_Pattern
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: 'JEE Main',     color: 'indigo' },
+                  { value: 'JEE Advanced', color: 'purple' },
+                  { value: 'NEET',         color: 'emerald' },
+                ].map(({ value, color }) => {
+                  const active = quizConfig.examType === value;
+                  const styles = {
+                    indigo:  { btn: active ? 'border-indigo-500/50 bg-indigo-500/10 text-indigo-300 shadow-[0_0_16px_rgba(99,102,241,0.15)]' : 'border-[#262626] bg-[#0f0f0f] text-gray-400 hover:border-indigo-500/30 hover:text-indigo-300' },
+                    purple:  { btn: active ? 'border-purple-500/50 bg-purple-500/10 text-purple-300 shadow-[0_0_16px_rgba(168,85,247,0.15)]' : 'border-[#262626] bg-[#0f0f0f] text-gray-400 hover:border-purple-500/30 hover:text-purple-300' },
+                    emerald: { btn: active ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300 shadow-[0_0_16px_rgba(16,185,129,0.15)]' : 'border-[#262626] bg-[#0f0f0f] text-gray-400 hover:border-emerald-500/30 hover:text-emerald-300' },
+                  };
+                  return (
+                    <button
+                      key={value}
+                      onClick={() => setQuizConfig({ ...quizConfig, examType: value })}
+                      className={`relative flex items-center gap-3 px-5 py-3.5 rounded-xl border font-semibold text-sm transition-all duration-200 ${styles[color].btn}`}
+                    >
+                      {active && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-current opacity-70" />}
+                      {value}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+
+            {/* Difficulty */}
             <div>
-              <label className="block text-xs font-mono text-gray-500 uppercase tracking-widest mb-3">Complexity</label>
-              <select value={quizConfig.difficulty} onChange={(e) => setQuizConfig({ ...quizConfig, difficulty: e.target.value })} className="w-full bg-[#0a0a0a] p-3 rounded-md border border-[#262626] text-white text-sm outline-none focus:border-gray-500 transition-colors">
-                <option>Easy</option><option>Medium</option><option>Hard</option>
-              </select>
+              <label className="block text-xs font-mono text-gray-500 uppercase tracking-widest mb-3">
+                Complexity_Level
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: 'Easy',   icon: '◎', desc: 'Concept recall',    color: 'green'  },
+                  { value: 'Medium', icon: '◑', desc: 'Application based', color: 'amber'  },
+                  { value: 'Hard',   icon: '●', desc: 'Problem solving',   color: 'red'    },
+                ].map(({ value, icon, desc, color }) => {
+                  const active = quizConfig.difficulty === value;
+                  const styles = {
+                    green: { btn: active ? 'border-green-500/50 bg-green-500/10 text-green-300 shadow-[0_0_16px_rgba(34,197,94,0.15)]' : 'border-[#262626] bg-[#0f0f0f] text-gray-400 hover:border-green-500/30 hover:text-green-300', icon: 'text-green-400' },
+                    amber: { btn: active ? 'border-amber-500/50 bg-amber-500/10 text-amber-300 shadow-[0_0_16px_rgba(245,158,11,0.15)]' : 'border-[#262626] bg-[#0f0f0f] text-gray-400 hover:border-amber-500/30 hover:text-amber-300', icon: 'text-amber-400' },
+                    red:   { btn: active ? 'border-red-500/50 bg-red-500/10 text-red-300 shadow-[0_0_16px_rgba(239,68,68,0.15)]'         : 'border-[#262626] bg-[#0f0f0f] text-gray-400 hover:border-red-500/30 hover:text-red-300',   icon: 'text-red-400' },
+                  };
+                  return (
+                    <button
+                      key={value}
+                      onClick={() => setQuizConfig({ ...quizConfig, difficulty: value })}
+                      className={`flex items-center gap-3 px-5 py-3.5 rounded-xl border font-semibold text-sm transition-all duration-200 ${styles[color].btn}`}
+                    >
+                      <span className={`font-mono text-base leading-none ${active ? '' : styles[color].icon}`}>{icon}</span>
+                      <span className="flex flex-col items-start gap-0.5">
+                        <span>{value}</span>
+                        <span className="font-mono text-[10px] opacity-50 font-normal">{desc}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+
+            {/* Question Count */}
             <div>
-              <label className="block text-xs font-mono text-gray-500 uppercase tracking-widest mb-3">#_Questions</label>
-              <input type="number" min="1" max="50" value={quizConfig.numQuestions} onChange={(e) => setQuizConfig({ ...quizConfig, numQuestions: e.target.value })} className="w-full bg-[#0a0a0a] p-3 rounded-md border border-[#262626] text-white text-sm outline-none focus:border-gray-500 transition-colors" />
+              <label className="block text-xs font-mono text-gray-500 uppercase tracking-widest mb-3">
+                #_Questions
+              </label>
+              <div className="flex items-center gap-4">
+                {/* Stepper — keyboard arrow up/down supported */}
+                <div
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowUp')   { e.preventDefault(); setQuizConfig(c => ({ ...c, numQuestions: Math.min(50, (parseInt(c.numQuestions) || 1) + 1) })); }
+                    if (e.key === 'ArrowDown') { e.preventDefault(); setQuizConfig(c => ({ ...c, numQuestions: Math.max(1,  (parseInt(c.numQuestions) || 1) - 1) })); }
+                  }}
+                  className="flex items-center border border-[#262626] bg-[#0f0f0f] rounded-xl overflow-hidden focus:outline-none focus:border-indigo-500/40 transition-colors"
+                >
+                  <button
+                    onClick={() => setQuizConfig(c => ({ ...c, numQuestions: Math.max(1, (parseInt(c.numQuestions) || 1) - 1) }))}
+                    className="px-5 py-3 text-gray-400 hover:text-white hover:bg-[#1a1a1a] font-mono text-xl transition-colors border-r border-[#262626] select-none"
+                  >−</button>
+                  <span className="w-16 text-center font-black text-2xl text-white font-mono tracking-tight select-none py-2">
+                    {quizConfig.numQuestions}
+                  </span>
+                  <button
+                    onClick={() => setQuizConfig(c => ({ ...c, numQuestions: Math.min(50, (parseInt(c.numQuestions) || 1) + 1) }))}
+                    className="px-5 py-3 text-gray-400 hover:text-white hover:bg-[#1a1a1a] font-mono text-xl transition-colors border-l border-[#262626] select-none"
+                  >+</button>
+                </div>
+                <span className="font-mono text-xs text-gray-600">↑ ↓ keys work too</span>
+              </div>
             </div>
+
           </div>
+
           <button onClick={handleGenerateQuiz} disabled={isQuizGenerating} className="w-full bg-white text-black py-4 rounded-md font-bold text-sm hover:bg-gray-200 disabled:opacity-50 transition-all">
             {isQuizGenerating ? <span className="font-mono">{quizLoadingStatus}</span> : "Execute Test Run"}
           </button>
@@ -265,10 +377,57 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
                 </button>
               </div>
             </div>
+          ) : showAnalytics ? (
+            // ── Per-question analytics bar chart ───────────────────────────
+            (() => {
+              const maxT = Math.max(...quizData.map((_, i) => questionTimes[i] || 0), 1);
+              return (
+                <div className="bg-[#121212] p-8 md:p-10 rounded-xl border border-[#262626] shadow-2xl">
+                  <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-xl font-bold text-white flex items-center gap-3"><TrendingUp className="text-indigo-400" size={22} /> Per-Question Analytics</h2>
+                    <button onClick={() => setShowAnalytics(false)} className="px-4 py-1.5 bg-[#1a1a1a] border border-[#262626] text-gray-400 rounded-md font-mono text-xs hover:text-white hover:border-[#404040] transition-colors">&lt; Back</button>
+                  </div>
+                  <div className="space-y-3">
+                    {quizData.map((q, i) => {
+                      const userOpts = selectedOptions[i] || [];
+                      const isSkipped = !submittedAnswers[i] || userOpts.length === 0;
+                      let isCorrect = false;
+                      if (!isSkipped) {
+                        if (q.type === 'numerical') {
+                          isCorrect = String(userOpts[0]).trim() === String(q.correct_answer).trim();
+                        } else {
+                          const c = q.correct_indices || [];
+                          isCorrect = userOpts.length === c.length && userOpts.every(v => c.includes(v));
+                        }
+                      }
+                      const t = questionTimes[i] || 0;
+                      const widthPct = Math.round((t / maxT) * 100);
+                      const barColor = isSkipped ? '#3f3f46' : isCorrect ? '#22c55e' : '#ef4444';
+                      return (
+                        <div key={i} className="flex items-center gap-4">
+                          <span className="font-mono text-xs text-gray-500 w-6 shrink-0">Q{i+1}</span>
+                          <div className="flex-1 bg-[#1a1a1a] rounded-full h-5 overflow-hidden relative">
+                            <div
+                              className="h-full rounded-full transition-all duration-700 ease-out"
+                              style={{ width: `${widthPct}%`, backgroundColor: barColor, opacity: 0.85 }}
+                            />
+                          </div>
+                          <span className="font-mono text-xs text-gray-400 w-12 text-right shrink-0">{formatTime(t)}</span>
+                          <span className="text-xs shrink-0">
+                            {isSkipped ? '⏭' : isCorrect ? '✅' : '❌'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-6 text-center font-mono text-[11px] text-gray-600">Bar width = relative time spent · Green = correct · Red = wrong · Gray = skipped</p>
+                </div>
+              );
+            })()
           ) : (() => {
             const stats = getQuizStats();
             let customMessage = 'Trace logs analyzed. Time to review the documentation and try again!';
-            if (stats.accuracy >= 80) customMessage = 'Outstanding execution! Ready for the real deal.';
+            if (stats.accuracy >= 80) customMessage = 'Outstanding execution! Ready for the real deal. 🎉';
             else if (stats.accuracy >= 50) customMessage = 'Solid run! A little more optimization and you are there.';
 
             return (
@@ -279,6 +438,27 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
                 <p className="text-sm text-gray-400 font-mono mb-2">{customMessage}</p>
                 <p className="text-sm text-gray-400 font-mono mb-12">Performance analysis for profile {quizConfig.examType}</p>
 
+                {/* Score ring */}
+                <div className="flex justify-center mb-10">
+                  <div className="relative w-32 h-32">
+                    <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#1e1e1e" strokeWidth="3" />
+                      <circle
+                        cx="18" cy="18" r="15.9" fill="none"
+                        stroke={stats.accuracy >= 80 ? '#6366f1' : stats.accuracy >= 50 ? '#f59e0b' : '#ef4444'}
+                        strokeWidth="3"
+                        strokeDasharray={`${stats.accuracy} ${100 - stats.accuracy}`}
+                        strokeLinecap="round"
+                        className="transition-all duration-1000"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-2xl font-black text-white">{stats.accuracy}%</span>
+                      <span className="text-[10px] font-mono text-gray-500">accuracy</span>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
                   <div className="bg-[#0a0a0a] p-6 rounded-md border border-[#262626] flex flex-col items-center">
                     <div className="text-gray-500 font-mono text-xs uppercase mb-3 flex items-center gap-2"><Target size={14} /> Score</div>
@@ -286,7 +466,7 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
                   </div>
                   <div className="bg-[#0a0a0a] p-6 rounded-md border border-[#262626] flex flex-col items-center">
                     <div className="text-gray-500 font-mono text-xs uppercase mb-3 flex items-center gap-2"><BarChart3 size={14} /> Accuracy</div>
-                    <div className="text-3xl font-bold text-white">{stats.accuracy}%</div>
+                    <div className={`text-3xl font-bold ${stats.accuracy >= 80 ? 'text-indigo-400' : stats.accuracy >= 50 ? 'text-amber-400' : 'text-red-400'}`}>{stats.accuracy}%</div>
                   </div>
                   <div className="bg-[#0a0a0a] p-6 rounded-md border border-[#262626] flex flex-col items-center">
                     <div className="text-gray-500 font-mono text-xs uppercase mb-3 flex items-center gap-2"><Clock size={14} /> Total Time</div>
@@ -305,10 +485,13 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
+                  <button onClick={() => setShowAnalytics(true)} className="px-8 py-3 bg-[#0a0a0a] border border-indigo-500/30 text-indigo-300 rounded-md font-mono text-sm hover:border-indigo-500/60 hover:text-indigo-200 transition-colors flex items-center justify-center gap-2">
+                    <TrendingUp size={14} /> Question Analytics
+                  </button>
                   <button onClick={() => setIsReviewMode(true)} className="px-8 py-3 bg-[#0a0a0a] border border-[#262626] text-gray-300 rounded-md font-mono text-sm hover:border-[#404040] hover:text-white transition-colors">
                     View Trace Logs
                   </button>
-                  <button onClick={() => { setQuizData(null); if (isFullscreen) toggleFullscreen(); setIsReviewMode(false); }} className="px-8 py-3 bg-white text-black rounded-md font-bold text-sm hover:bg-gray-200 transition-colors">
+                  <button onClick={() => { setQuizData(null); if (isFullscreen) toggleFullscreen(); setIsReviewMode(false); setShowAnalytics(false); }} className="px-8 py-3 bg-white text-black rounded-md font-bold text-sm hover:bg-gray-200 transition-colors">
                     Initialize New Run
                   </button>
                 </div>
@@ -461,7 +644,7 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
               <button onClick={() => setCurrentMcqIndex(Math.max(0, currentMcqIndex - 1))} className="px-5 py-2.5 bg-transparent border border-[#262626] text-gray-400 rounded-md text-xs disabled:opacity-30 hover:bg-[#171717] hover:text-white hover:border-[#404040] transition-colors" disabled={currentMcqIndex === 0}>&lt; Prev</button>
               <button
                 onClick={() => {
-                  if (currentMcqIndex === quizData.length - 1) setIsQuizFinished(true);
+                  if (currentMcqIndex === quizData.length - 1) handleQuizFinish();
                   else setCurrentMcqIndex(currentMcqIndex + 1);
                 }}
                 className={`px-6 py-2.5 rounded-md font-bold text-xs transition-all ${currentMcqIndex === quizData.length - 1 ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-[#262626] text-white hover:bg-[#404040]'}`}

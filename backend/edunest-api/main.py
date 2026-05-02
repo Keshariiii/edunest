@@ -4,11 +4,27 @@ import base64
 import asyncio
 import traceback
 import httpx
+from io import BytesIO
 from typing import List, Any, Optional
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+# Optional: docx/pptx support
+try:
+    from docx import Document as DocxDocument
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
+    print("WARNING: python-docx not installed. .docx uploads will be rejected.")
+
+try:
+    from pptx import Presentation as PptxPresentation
+    PPTX_AVAILABLE = True
+except ImportError:
+    PPTX_AVAILABLE = False
+    print("WARNING: python-pptx not installed. .pptx uploads will be rejected.")
 
 # Initialize FastAPI app for EduNest
 app = FastAPI()
@@ -137,6 +153,28 @@ def parse_json_response(raw: str) -> dict:
 import io
 from PIL import Image
 
+def extract_text_from_docx(data: bytes) -> str:
+    """Extract plain text from a .docx file."""
+    try:
+        doc = DocxDocument(BytesIO(data))
+        return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+    except Exception as e:
+        raise RuntimeError(f"Failed to parse .docx: {e}")
+
+def extract_text_from_pptx(data: bytes) -> str:
+    """Extract plain text from a .pptx file."""
+    try:
+        prs = PptxPresentation(BytesIO(data))
+        texts = []
+        for slide in prs.slides:
+            for shape in slide.shapes:
+                if hasattr(shape, "text") and shape.text.strip():
+                    texts.append(shape.text)
+        return "\n".join(texts)
+    except Exception as e:
+        raise RuntimeError(f"Failed to parse .pptx: {e}")
+
+
 def encode_file(data: bytes, mime_type: str) -> dict:
     """Encodes raw file bytes as a Gemini inlineData part, compressing images to prevent hanging payloads."""
     if mime_type.startswith("image/"):
@@ -172,11 +210,24 @@ async def generate_study_material(
     subject: str = Form(...),
 ):
     try:
-        # Build file parts (inline base64)
+        # Build file parts (inline base64), with text extraction for office formats
         file_parts = []
         for file in files:
             file_data = await file.read()
-            file_parts.append(encode_file(file_data, file.content_type))
+            fname = (file.filename or "").lower()
+            ct = file.content_type or ""
+            if fname.endswith(".docx") or ct == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                if not DOCX_AVAILABLE:
+                    raise HTTPException(status_code=400, detail="python-docx not installed on server.")
+                extracted = extract_text_from_docx(file_data)
+                file_parts.append({"text": f"[DOCUMENT CONTENT]:\n{extracted}"})
+            elif fname.endswith(".pptx") or ct == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+                if not PPTX_AVAILABLE:
+                    raise HTTPException(status_code=400, detail="python-pptx not installed on server.")
+                extracted = extract_text_from_pptx(file_data)
+                file_parts.append({"text": f"[SLIDE CONTENT]:\n{extracted}"})
+            else:
+                file_parts.append(encode_file(file_data, ct or "application/octet-stream"))
 
         prompt_text = f"""
         ACT AS AN EXPERT TUTOR FOR {subject.upper()}.
@@ -188,6 +239,7 @@ async def generate_study_material(
         You MUST double-escape all backslashes in your LaTeX (e.g., use \\\\frac instead of \\frac, \\\\sum instead of \\sum). This is strictly required for valid JSON.
 
         TASK & STRICT LIMITS:
+        0. Metadata: Identify the chapter/topic name from this document. List the 3-6 key topics covered.
         1. Formulas: Extract the 5 to 10 most important mathematical/scientific formulas from this document. Convert to LaTeX.
         2. Short Notes: Generate 5 to 10 highly condensed, core conceptual points from this document.
            Return clean, plain text strings for short_notes. DO NOT start strings with dashes (-), bullet points, or asterisks (*).
@@ -195,6 +247,7 @@ async def generate_study_material(
 
         FORMAT EXACTLY AS THIS JSON STRUCTURE:
         {{
+          "metadata": {{ "chapter_title": "string", "topics_covered": ["topic1", "topic2"] }},
           "formulas": [{{ "name": "string", "equation": "latex_string" }}],
           "short_notes": ["clean string without bullet characters"],
           "flashcards": [{{ "front": "string", "back": "string" }}]
@@ -229,6 +282,7 @@ async def generate_study_material(
 
         data = parse_json_response(raw_response)
         return {
+            "metadata":    data.get("metadata", {"chapter_title": "", "topics_covered": []}),
             "formulas":    data.get("formulas", []),
             "short_notes": data.get("short_notes", []),
             "flashcards":  data.get("flashcards", []),
@@ -402,3 +456,79 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port, timeout_keep_alive=300)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POST /api/regenerate-section
+# Regenerates ONLY one section (formulas | short_notes | flashcards) from the
+# same uploaded files. Uses a smaller, targeted prompt to save API quota.
+# ─────────────────────────────────────────────────────────────────────────────
+SECTION_PROMPTS = {
+    "formulas": """
+        ACT AS AN EXPERT {subject} TUTOR.
+        From the provided document, extract the 5 to 10 most important mathematical/scientific formulas.
+        Double-escape ALL LaTeX backslashes (e.g. \\\\frac, \\\\sum).
+        Return ONLY this JSON: {{ "formulas": [{{ "name": "string", "equation": "latex_string" }}] }}
+    """,
+    "notes": """
+        ACT AS AN EXPERT {subject} TUTOR.
+        From the provided document, generate 5 to 10 highly condensed, high-yield conceptual notes.
+        Return clean plain text strings. DO NOT start with dashes, bullets, or asterisks.
+        Return ONLY this JSON: {{ "short_notes": ["note text"] }}
+    """,
+    "flashcards": """
+        ACT AS AN EXPERT {subject} TUTOR.
+        From the provided document, create 5 to 10 active-recall flashcards for high-yield definitions.
+        Return ONLY this JSON: {{ "flashcards": [{{ "front": "string", "back": "string" }}] }}
+    """,
+}
+
+@app.post("/api/regenerate-section")
+async def regenerate_section(
+    files: List[UploadFile] = File(...),
+    subject: str = Form(...),
+    section_type: str = Form(...),   # "formulas" | "notes" | "flashcards"
+):
+    if section_type not in SECTION_PROMPTS:
+        raise HTTPException(status_code=400, detail=f"Unknown section_type '{section_type}'. Must be: formulas, notes, flashcards.")
+
+    try:
+        file_parts = []
+        for file in files:
+            file_data = await file.read()
+            fname = (file.filename or "").lower()
+            ct = file.content_type or ""
+            if fname.endswith(".docx") or ct == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                if not DOCX_AVAILABLE:
+                    raise HTTPException(status_code=400, detail="python-docx not installed.")
+                extracted = extract_text_from_docx(file_data)
+                file_parts.append({"text": f"[DOCUMENT CONTENT]:\n{extracted}"})
+            elif fname.endswith(".pptx") or ct == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+                if not PPTX_AVAILABLE:
+                    raise HTTPException(status_code=400, detail="python-pptx not installed.")
+                extracted = extract_text_from_pptx(file_data)
+                file_parts.append({"text": f"[SLIDE CONTENT]:\n{extracted}"})
+            else:
+                file_parts.append(encode_file(file_data, ct or "application/octet-stream"))
+
+        prompt_text = SECTION_PROMPTS[section_type].format(subject=subject.upper())
+        parts = [{"text": prompt_text}] + file_parts
+
+        generation_config = {"responseMimeType": "application/json", "temperature": 0.4}
+
+        raw_response = await call_gemini(parts, generation_config)
+        data = parse_json_response(raw_response)
+
+        # Return only the requested section
+        if section_type == "formulas":
+            return {"section": "formulas", "data": data.get("formulas", [])}
+        elif section_type == "notes":
+            return {"section": "notes", "data": data.get("short_notes", [])}
+        elif section_type == "flashcards":
+            return {"section": "flashcards", "data": data.get("flashcards", [])}
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Regeneration error: {str(e)}")

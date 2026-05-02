@@ -1,7 +1,7 @@
 import React from 'react';
-import { GraduationCap, Maximize, Sparkles, ArrowRight } from 'lucide-react';
+import { GraduationCap, Maximize, Sparkles, ArrowRight, TrendingUp } from 'lucide-react';
 
-const Navbar = ({ results, setResults, setFiles, setSubject, toggleFullscreen, view, setView }) => {
+const Navbar = ({ results, setResults, setFiles, setSubject, toggleFullscreen, view, setView, quizHistory, showAnalytics, setShowAnalytics }) => {
   const isWorkspace = results !== null;
   const isLanding = view === 'landing';
 
@@ -11,7 +11,7 @@ const Navbar = ({ results, setResults, setFiles, setSubject, toggleFullscreen, v
 
         {/* Logo — always clickable back to landing */}
         <button
-          onClick={() => { setResults(null); setFiles([]); setSubject(''); setView('landing'); }}
+          onClick={() => { setResults(null); setFiles([]); setSubject(''); setView('landing'); setShowAnalytics?.(false); }}
           className="flex items-center gap-3 group transition-opacity hover:opacity-80 focus:outline-none"
           title="Return to Home"
         >
@@ -38,12 +38,30 @@ const Navbar = ({ results, setResults, setFiles, setSubject, toggleFullscreen, v
                 <Maximize size={13} /> Fullscreen
               </button>
               <button
-                onClick={() => { setResults(null); setFiles([]); setSubject(''); setView('app'); }}
+                onClick={() => { setResults(null); setFiles([]); setSubject(''); setView('app'); setShowAnalytics?.(false); }}
                 className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-[#121212] text-gray-300 border border-[#262626] rounded-md hover:bg-[#1a1a1a] hover:text-white transition-colors text-xs"
               >
                 ← New Workspace
               </button>
             </>
+          )}
+
+          {/* History / Analytics toggle — shown when not on landing and history exists */}
+          {!isLanding && quizHistory?.length > 0 && (
+            <button
+              onClick={() => setShowAnalytics?.(prev => !prev)}
+              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-md border font-mono text-xs transition-all ${
+                showAnalytics
+                  ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300'
+                  : 'bg-[#121212] border-[#262626] text-gray-400 hover:text-white hover:bg-[#1a1a1a]'
+              }`}
+              title="Quiz History & Analytics"
+            >
+              <TrendingUp size={12} /> History
+              <span className="ml-0.5 bg-indigo-500 text-white font-bold text-[9px] rounded-full w-4 h-4 flex items-center justify-center">
+                {quizHistory.length > 9 ? '9+' : quizHistory.length}
+              </span>
+            </button>
           )}
 
           {/* Landing-page CTA */}
@@ -72,3 +90,4 @@ const Navbar = ({ results, setResults, setFiles, setSubject, toggleFullscreen, v
 };
 
 export default Navbar;
+

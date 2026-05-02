@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Cpu, UploadCloud, Trash2 } from 'lucide-react';
+import { Cpu, UploadCloud, Trash2, Camera, FileText } from 'lucide-react';
 
 const HeroSection = ({
   subject,
@@ -75,19 +75,37 @@ const HeroSection = ({
             }`}
           >
             <UploadCloud size={28} className={`mb-3 transition-all duration-300 ${isDragging ? 'text-indigo-400 scale-110' : 'text-gray-500'}`} />
+
+            {/* Hidden file inputs */}
             <input
               type="file"
               id="up"
-              accept=".pdf,image/*"
+              accept=".pdf,.doc,.docx,.ppt,.pptx,image/*"
               multiple
               className="hidden"
               onClick={(e) => { e.target.value = ''; }}
               onChange={(e) => { if (e.target.files?.length) { setFiles(prev => [...prev, ...Array.from(e.target.files)]); } }}
             />
-            <label htmlFor="up" className="bg-white text-black px-5 py-2 rounded-lg font-semibold cursor-pointer hover:bg-gray-200 transition-colors text-sm">
-              Select Files
-            </label>
-            <p className="mt-3 text-gray-500 font-mono text-[10px]">Drop PDFs or Images here</p>
+            {/* Camera capture — mobile only */}
+            <input
+              type="file"
+              id="cam"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onClick={(e) => { e.target.value = ''; }}
+              onChange={(e) => { if (e.target.files?.length) { setFiles(prev => [...prev, ...Array.from(e.target.files)]); } }}
+            />
+
+            <div className="flex flex-wrap gap-2 justify-center">
+              <label htmlFor="up" className="flex items-center gap-2 bg-white text-black px-5 py-2 rounded-lg font-semibold cursor-pointer hover:bg-gray-200 transition-colors text-sm">
+                <FileText size={14} /> Select Files
+              </label>
+              <label htmlFor="cam" className="flex items-center gap-2 bg-[#1a1a1a] text-gray-300 border border-[#333] px-4 py-2 rounded-lg font-semibold cursor-pointer hover:border-indigo-500/50 hover:text-indigo-300 transition-all text-sm md:hidden">
+                <Camera size={14} /> Scan Page
+              </label>
+            </div>
+            <p className="mt-3 text-gray-500 font-mono text-[10px]">PDF · Image · DOCX · PPTX — drop or select</p>
 
             {files.length > 0 && (
               <div className="mt-5 flex flex-col gap-2 w-full">

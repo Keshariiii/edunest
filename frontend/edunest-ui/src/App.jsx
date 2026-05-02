@@ -1,6 +1,6 @@
 /* eslint-disable */
 import React, { useState, useEffect, useRef } from 'react';
-import { Calculator, FileText, Layers, Minimize, BrainCircuit, AlertTriangle } from 'lucide-react';
+import { Calculator, FileText, Layers, Minimize, BrainCircuit, AlertTriangle, RefreshCw, BookOpen, Tag } from 'lucide-react';
 
 import Navbar from './components/Navbar';
 import LandingPage from './components/LandingPage';
@@ -9,6 +9,7 @@ import FormulasTab from './components/FormulasTab';
 import NotesTab from './components/NotesTab';
 import FlashcardsTab from './components/FlashcardsTab';
 import QuizTab from './components/QuizTab';
+import AnalyticsPanel from './components/AnalyticsPanel';
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
@@ -60,7 +61,21 @@ export default function App() {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [regeneratingSection, setRegeneratingSection] = useState(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [quizHistory, setQuizHistory] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('edunest_quiz_history') || '[]'); } catch { return []; }
+  });
   const mainContainerRef = useRef(null);
+
+  // Persist quiz history to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('edunest_quiz_history', JSON.stringify(quizHistory));
+  }, [quizHistory]);
+
+  const handleQuizComplete = (result) => {
+    setQuizHistory(prev => [result, ...prev].slice(0, 50)); // keep last 50 attempts
+  };
 
   // Scroll to top whenever the view changes
   useEffect(() => {
@@ -149,6 +164,31 @@ export default function App() {
     }
   };
 
+  const handleRegenerateSection = async (sectionType) => {
+    if (!files.length || !subject) return;
+    setRegeneratingSection(sectionType);
+    try {
+      const backendHost = window.location.hostname;
+      const formData = new FormData();
+      files.forEach(f => formData.append('files', f));
+      formData.append('subject', subject);
+      formData.append('section_type', sectionType === 'notes' ? 'notes' : sectionType);
+      const resp = await fetch(`http://${backendHost}:8000/api/regenerate-section`, { method: 'POST', body: formData });
+      if (!resp.ok) throw new Error(`Server returned ${resp.status}`);
+      const data = await resp.json();
+      setResults(prev => ({
+        ...prev,
+        ...(sectionType === 'formulas' ? { formulas: data.data } : {}),
+        ...(sectionType === 'notes'    ? { short_notes: data.data } : {}),
+        ...(sectionType === 'flashcards' ? { flashcards: data.data } : {}),
+      }));
+    } catch (e) {
+      console.error('Regeneration failed:', e);
+    } finally {
+      setRegeneratingSection(null);
+    }
+  };
+
   // ─── Derived flags ──────────────────────────────────────────────────────────
   const isLandingView = view === 'landing';
   const inResults = results !== null;
@@ -209,6 +249,9 @@ export default function App() {
           toggleFullscreen={toggleFullscreen}
           view={view}
           setView={setView}
+          quizHistory={quizHistory}
+          showAnalytics={showAnalytics}
+          setShowAnalytics={setShowAnalytics}
         />
       )}
 
@@ -229,13 +272,25 @@ export default function App() {
         className={`relative z-10 w-full print:overflow-visible print:block print:h-auto ${(inResults || isFullscreen) ? 'flex-1 overflow-y-auto' : ''} ${isFullscreen ? 'fixed inset-0 z-50 bg-[#0a0a0a]' : (inResults ? 'pt-8 pb-8' : '')}`}
       >
 
+        {/* ── ANALYTICS PANEL ───────────────────────────────────────────── */}
+        {showAnalytics && !isFullscreen && (
+          <div className="mx-auto w-full max-w-4xl px-6 pt-10 pb-20">
+            <AnalyticsPanel
+              quizHistory={quizHistory}
+              onClearHistory={() => { setQuizHistory([]); }}
+              onClose={() => setShowAnalytics(false)}
+            />
+          </div>
+        )}
+
         {/* ── LANDING PAGE ──────────────────────────────────────────────── */}
-        {isLandingView && !inResults && (
+        {isLandingView && !inResults && !showAnalytics && (
           <LandingPage onGetStarted={() => setView('app')} />
         )}
 
+
         {/* ── WORKSPACE (Upload Tool) ───────────────────────────────────── */}
-        {!isLandingView && !inResults && !isFullscreen && (
+        {!isLandingView && !inResults && !isFullscreen && !showAnalytics && (
           <div className="mx-auto w-full max-w-7xl px-6 pt-24 pb-20">
             <HeroSection
               subject={subject}
@@ -270,15 +325,36 @@ export default function App() {
                   </div>
                 )}
 
+                {/* Chapter / Topic Metadata */}
+                {results?.metadata?.chapter_title && (
+                  <div className="no-print mb-6 bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl p-4 animate-in fade-in duration-500">
+                    <div className="flex items-start gap-3">
+                      <BookOpen size={14} className="text-indigo-400 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-white font-bold text-sm mb-1.5">{results.metadata.chapter_title}</p>
+                        {results.metadata.topics_covered?.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {results.metadata.topics_covered.map(t => (
+                              <span key={t} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-mono text-[10px]">
+                                <Tag size={8} /> {t}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Tab Bar */}
                 {!isFullscreen && (
                   <div className="no-print flex gap-1 overflow-x-auto pb-4 mb-6 md:mb-8 border-b border-[#262626] no-scrollbar relative w-full items-center">
                     <div className="absolute left-0 bottom-4 w-full h-[1px] bg-[#262626]" />
-                    {[
-                      { id: 'formulas',   icon: <Calculator size={14} /> },
-                      { id: 'notes',      icon: <FileText size={14} /> },
-                      { id: 'flashcards', icon: <Layers size={14} /> },
-                      { id: 'quiz',       icon: <BrainCircuit size={14} /> },
+                  {[
+                      { id: 'formulas',   icon: <Calculator size={14} />, label: 'formulas' },
+                      { id: 'notes',      icon: <FileText size={14} />,   label: 'notes' },
+                      { id: 'flashcards', icon: <Layers size={14} />,     label: 'flashcards' },
+                      { id: 'quiz',       icon: <BrainCircuit size={14} />, label: 'quiz' },
                     ].map(tab => (
                       <button
                         key={tab.id}
@@ -289,9 +365,23 @@ export default function App() {
                             : 'text-gray-500 hover:text-gray-300 bg-transparent border border-transparent hover:bg-[#121212]/50'
                         }`}
                       >
-                        {tab.icon} {tab.id}.md
+                        {tab.icon} {tab.label}.md
                       </button>
                     ))}
+                  </div>
+                )}
+
+                {/* Regenerate button for non-quiz tabs */}
+                {activeTab !== 'quiz' && !isFullscreen && (
+                  <div className="no-print flex justify-end mb-3">
+                    <button
+                      onClick={() => handleRegenerateSection(activeTab === 'notes' ? 'notes' : activeTab)}
+                      disabled={!!regeneratingSection}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#111] border border-[#262626] text-gray-500 hover:text-indigo-400 hover:border-indigo-500/30 font-mono text-[11px] transition-all disabled:opacity-40"
+                    >
+                      <RefreshCw size={11} className={regeneratingSection === activeTab ? 'animate-spin text-indigo-400' : ''} />
+                      {regeneratingSection === activeTab ? 'Regenerating...' : `Regenerate ${activeTab}`}
+                    </button>
                   </div>
                 )}
 
@@ -305,6 +395,7 @@ export default function App() {
                     isFullscreen={isFullscreen}
                     toggleFullscreen={toggleFullscreen}
                     mainContainerRef={mainContainerRef}
+                    onQuizComplete={handleQuizComplete}
                   />
                 )}
               </div>
