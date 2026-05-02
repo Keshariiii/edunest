@@ -244,6 +244,12 @@ async def generate_study_material(
         2. Short Notes: Generate 5 to 10 highly condensed, core conceptual points from this document.
            Return clean, plain text strings for short_notes. DO NOT start strings with dashes (-), bullet points, or asterisks (*).
         3. Flashcards: Create exactly 5 to 10 active-recall flashcards covering high-yield definitions and concepts.
+           !!! MATH IN FLASHCARDS RULE !!!
+           - ALL mathematical expressions, equations, variables, and symbols MUST be wrapped in LaTeX inline delimiters: $...$
+           - Example: write "$x^3 - 6x + 11x - 6$" NOT "x^3 - 6x + 11x - 6"
+           - Example: write "$a^m \\times a^n = a^{m+n}$" NOT "a^m \times a^n = a^{m+n}"
+           - Double-escape ALL backslashes inside $...$: use \\\\frac, \\\\sqrt, \\\\times, \\\\sum, etc.
+           - Plain text parts of the flashcard (non-math) should remain as normal text.
 
         FORMAT EXACTLY AS THIS JSON STRUCTURE:
         {{
@@ -478,7 +484,15 @@ SECTION_PROMPTS = {
     """,
     "flashcards": """
         ACT AS AN EXPERT {subject} TUTOR.
-        From the provided document, create 5 to 10 active-recall flashcards for high-yield definitions.
+        From the provided document, create 5 to 10 active-recall flashcards for high-yield definitions and concepts.
+
+        !!! MATH IN FLASHCARDS RULE !!!
+        - ALL mathematical expressions, equations, variables, and symbols MUST be wrapped in LaTeX inline delimiters: $...$
+        - Example: write "$x^3 - 6x + 11x - 6$" NOT "x^3 - 6x + 11x - 6"
+        - Example: write "$(a+b)^2 = a^2 + b^2 + 2ab$" NOT "(a+b)^2 = a^2 + b^2 + 2ab"
+        - Double-escape ALL backslashes inside $...$: \\\\frac, \\\\sqrt, \\\\times, \\\\sum, etc.
+        - Plain text parts remain as normal text. Only math gets $...$.
+
         Return ONLY this JSON: {{ "flashcards": [{{ "front": "string", "back": "string" }}] }}
     """,
 }
