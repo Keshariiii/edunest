@@ -84,7 +84,7 @@ const LandingPage = ({ onGetStarted }) => {
         {/* Version badge */}
         <motion.div {...fadeUp(0)} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111] border border-[#222] text-[11px] font-mono text-gray-500 mb-8">
           <Zap size={11} className="text-indigo-400 animate-pulse" />
-          EduNest Engine v1.0 — Powered by Gemini
+          EduNest Engine v1.0
         </motion.div>
 
         {/* Headline — tighter, more balanced */}
