@@ -62,6 +62,13 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /api/health — lightweight ping for frontend status indicator
+# ─────────────────────────────────────────────────────────────────────────────
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok"}
+
 # API key is loaded dynamically on every request so swapping the key in .env
 # takes effect immediately — no server restart required.
 try:

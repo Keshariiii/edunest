@@ -1,9 +1,55 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { GraduationCap, Maximize, Sparkles, ArrowRight, TrendingUp } from 'lucide-react';
 
 const Navbar = ({ results, setResults, setFiles, setSubject, toggleFullscreen, view, setView, quizHistory, showAnalytics, setShowAnalytics }) => {
   const isWorkspace = results !== null;
   const isLanding = view === 'landing';
+
+  // ── API Health Check ──────────────────────────────────────────────────────
+  const [apiStatus, setApiStatus] = useState('checking'); // 'checking' | 'active' | 'inactive'
+
+  useEffect(() => {
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+    const checkHealth = async () => {
+      try {
+        const res = await fetch(`${apiBase}/api/health`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(4000), // 4s timeout
+        });
+        setApiStatus(res.ok ? 'active' : 'inactive');
+      } catch {
+        setApiStatus('inactive');
+      }
+    };
+
+    checkHealth(); // run immediately on mount
+    const interval = setInterval(checkHealth, 5000); // then every 5s
+    return () => clearInterval(interval);
+  }, []);
+
+  const statusConfig = {
+    checking: {
+      dot: 'bg-gray-500 animate-pulse',
+      text: 'text-gray-500',
+      label: 'Checking...',
+      border: 'border-[#262626]',
+    },
+    active: {
+      dot: 'bg-emerald-500 animate-[pulse_2s_ease-in-out_infinite] shadow-[0_0_6px_rgba(16,185,129,0.7)]',
+      text: 'text-emerald-400',
+      label: 'API Active',
+      border: 'border-emerald-500/20',
+    },
+    inactive: {
+      dot: 'bg-red-500 animate-[pulse_1.5s_ease-in-out_infinite] shadow-[0_0_6px_rgba(239,68,68,0.7)]',
+      text: 'text-red-400',
+      label: 'API Offline',
+      border: 'border-red-500/20',
+    },
+  };
+
+  const { dot, text, label, border } = statusConfig[apiStatus];
 
   return (
     <nav className="sticky top-0 w-full z-50 bg-[#0a0a0a]/60 backdrop-blur-2xl supports-[backdrop-filter]:bg-[#0a0a0a]/60 border-b border-white/[0.06] shadow-[0_4px_40px_rgba(0,0,0,0.5)] transition-all duration-300">
@@ -75,11 +121,11 @@ const Navbar = ({ results, setResults, setFiles, setSubject, toggleFullscreen, v
             </button>
           )}
 
-          {/* API status dot — always visible */}
+          {/* API status dot — always visible (except on landing) */}
           {!isLanding && (
-            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#121212] border border-[#262626] text-xs shadow-sm">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-[pulse_2s_ease-in-out_infinite]" />
-              API Active
+            <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#121212] border ${border} text-xs shadow-sm transition-all duration-500`}>
+              <div className={`w-2 h-2 rounded-full transition-all duration-500 ${dot}`} />
+              <span className={`transition-colors duration-500 ${text}`}>{label}</span>
             </span>
           )}
         </div>
@@ -90,4 +136,3 @@ const Navbar = ({ results, setResults, setFiles, setSubject, toggleFullscreen, v
 };
 
 export default Navbar;
-
