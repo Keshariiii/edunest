@@ -254,7 +254,7 @@ async def generate_study_material(
            !!! MATH IN FLASHCARDS RULE !!!
            - ALL mathematical expressions, equations, variables, and symbols MUST be wrapped in LaTeX inline delimiters: $...$
            - Example: write "$x^3 - 6x + 11x - 6$" NOT "x^3 - 6x + 11x - 6"
-           - Example: write "$a^m \\times a^n = a^{m+n}$" NOT "a^m \times a^n = a^{m+n}"
+           - Example: write "$a^m \\\\times a^n = a^{{m+n}}$" NOT "a^m \\times a^n = a^{{m+n}}"
            - Double-escape ALL backslashes inside $...$: use \\\\frac, \\\\sqrt, \\\\times, \\\\sum, etc.
            - Plain text parts of the flashcard (non-math) should remain as normal text.
 
