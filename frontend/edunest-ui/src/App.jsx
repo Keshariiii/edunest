@@ -125,8 +125,8 @@ export default function App() {
     const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
-      const backendHost = window.location.hostname;
-      const response = await fetch(`http://${backendHost}:8000/api/generate-study-material`, {
+      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiBase}/api/generate-study-material`, {
         method: 'POST',
         body: formData,
         signal: controller.signal,
@@ -168,12 +168,12 @@ export default function App() {
     if (!files.length || !subject) return;
     setRegeneratingSection(sectionType);
     try {
-      const backendHost = window.location.hostname;
+      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const formData = new FormData();
       files.forEach(f => formData.append('files', f));
       formData.append('subject', subject);
       formData.append('section_type', sectionType === 'notes' ? 'notes' : sectionType);
-      const resp = await fetch(`http://${backendHost}:8000/api/regenerate-section`, { method: 'POST', body: formData });
+      const resp = await fetch(`${apiBase}/api/regenerate-section`, { method: 'POST', body: formData });
       if (!resp.ok) throw new Error(`Server returned ${resp.status}`);
       const data = await resp.json();
       setResults(prev => ({
