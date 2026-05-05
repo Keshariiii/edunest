@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
+import 'katex/dist/contrib/mhchem.min.js'; // enables \ce{...} chemical notation
 
 // throwOnError: false — if Gemini returns malformed LaTeX, render a red token
 // instead of crashing the entire React tree and causing a black screen.
