@@ -154,7 +154,7 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-5xl mx-auto">
       {!quizData ? (
-        <div className="bg-[#121212] p-8 md:p-10 border border-[#262626] rounded-xl shadow-2xl relative overflow-hidden">
+        <div className="bg-[#121212] p-6 sm:p-8 md:p-10 border border-[#262626] rounded-xl shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-[80px] -mr-32 -mt-32 pointer-events-none"></div>
           <div className="flex items-center gap-4 mb-8">
             <div className="p-3 bg-[#171717] border border-[#262626] rounded-md"><Settings className="text-gray-400" size={20} /></div>
@@ -245,14 +245,14 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
                 >
                   <button
                     onClick={() => setQuizConfig(c => ({ ...c, numQuestions: Math.max(1, (parseInt(c.numQuestions) || 1) - 1) }))}
-                    className="px-5 py-3 text-gray-400 hover:text-white hover:bg-[#1a1a1a] font-mono text-xl transition-colors border-r border-[#262626] select-none"
+                    className="px-4 sm:px-5 py-2 sm:py-3 text-gray-400 hover:text-white hover:bg-[#1a1a1a] font-mono text-xl transition-colors border-r border-[#262626] select-none"
                   >−</button>
-                  <span className="w-16 text-center font-black text-2xl text-white font-mono tracking-tight select-none py-2">
+                  <span className="w-12 sm:w-16 text-center font-black text-xl sm:text-2xl text-white font-mono tracking-tight select-none py-2">
                     {quizConfig.numQuestions}
                   </span>
                   <button
                     onClick={() => setQuizConfig(c => ({ ...c, numQuestions: Math.min(50, (parseInt(c.numQuestions) || 1) + 1) }))}
-                    className="px-5 py-3 text-gray-400 hover:text-white hover:bg-[#1a1a1a] font-mono text-xl transition-colors border-l border-[#262626] select-none"
+                    className="px-4 sm:px-5 py-2 sm:py-3 text-gray-400 hover:text-white hover:bg-[#1a1a1a] font-mono text-xl transition-colors border-l border-[#262626] select-none"
                   >+</button>
                 </div>
                 <span className="font-mono text-xs text-gray-600">↑ ↓ keys work too</span>
@@ -431,7 +431,7 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
             else if (stats.accuracy >= 50) customMessage = 'Solid run! A little more optimization and you are there.';
 
             return (
-              <div className="bg-[#121212] p-10 md:p-16 rounded-xl border border-[#262626] text-center relative overflow-hidden shadow-2xl">
+              <div className="bg-[#121212] p-8 md:p-16 rounded-xl border border-[#262626] text-center relative overflow-hidden shadow-2xl">
                 <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[100px] -mr-64 -mt-64 pointer-events-none"></div>
                 <Award size={40} className="text-indigo-400 mx-auto mb-6" />
                 <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Execution Finished</h2>
@@ -459,26 +459,26 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-                  <div className="bg-[#0a0a0a] p-6 rounded-md border border-[#262626] flex flex-col items-center">
-                    <div className="text-gray-500 font-mono text-xs uppercase mb-3 flex items-center gap-2"><Target size={14} /> Score</div>
-                    <div className="text-3xl font-bold text-white">{stats.score} <span className="text-sm text-gray-500 font-mono font-normal">/ {stats.maxScore}</span></div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 mb-12">
+                  <div className="bg-[#0a0a0a] p-4 sm:p-6 rounded-md border border-[#262626] flex flex-col items-center">
+                    <div className="text-gray-500 font-mono text-[10px] sm:text-xs uppercase mb-2 sm:mb-3 flex items-center gap-1.5"><Target size={14} /> Score</div>
+                    <div className="text-2xl sm:text-3xl font-bold text-white">{stats.score} <span className="text-xs sm:text-sm text-gray-500 font-mono font-normal">/ {stats.maxScore}</span></div>
                   </div>
-                  <div className="bg-[#0a0a0a] p-6 rounded-md border border-[#262626] flex flex-col items-center">
-                    <div className="text-gray-500 font-mono text-xs uppercase mb-3 flex items-center gap-2"><BarChart3 size={14} /> Accuracy</div>
-                    <div className={`text-3xl font-bold ${stats.accuracy >= 80 ? 'text-indigo-400' : stats.accuracy >= 50 ? 'text-amber-400' : 'text-red-400'}`}>{stats.accuracy}%</div>
+                  <div className="bg-[#0a0a0a] p-4 sm:p-6 rounded-md border border-[#262626] flex flex-col items-center">
+                    <div className="text-gray-500 font-mono text-[10px] sm:text-xs uppercase mb-2 sm:mb-3 flex items-center gap-1.5"><BarChart3 size={14} /> Accur.</div>
+                    <div className={`text-2xl sm:text-3xl font-bold ${stats.accuracy >= 80 ? 'text-indigo-400' : stats.accuracy >= 50 ? 'text-amber-400' : 'text-red-400'}`}>{stats.accuracy}%</div>
                   </div>
-                  <div className="bg-[#0a0a0a] p-6 rounded-md border border-[#262626] flex flex-col items-center">
-                    <div className="text-gray-500 font-mono text-xs uppercase mb-3 flex items-center gap-2"><Clock size={14} /> Total Time</div>
-                    <div className="text-3xl font-bold text-white">{formatTime(stats.totalTime)}</div>
+                  <div className="bg-[#0a0a0a] p-4 sm:p-6 rounded-md border border-[#262626] flex flex-col items-center">
+                    <div className="text-gray-500 font-mono text-[10px] sm:text-xs uppercase mb-2 sm:mb-3 flex items-center gap-1.5"><Clock size={14} /> Time</div>
+                    <div className="text-2xl sm:text-3xl font-bold text-white">{formatTime(stats.totalTime)}</div>
                   </div>
-                  <div className="bg-[#0a0a0a] p-6 rounded-md border border-[#262626] flex flex-col items-center">
-                    <div className="text-gray-500 font-mono text-xs uppercase mb-3 flex items-center gap-2"><Zap size={14} /> Avg Time</div>
-                    <div className="text-3xl font-bold text-white">{formatTime(Math.round(stats.totalTime / quizData.length))}</div>
+                  <div className="bg-[#0a0a0a] p-4 sm:p-6 rounded-md border border-[#262626] flex flex-col items-center">
+                    <div className="text-gray-500 font-mono text-[10px] sm:text-xs uppercase mb-2 sm:mb-3 flex items-center gap-1.5"><Zap size={14} /> Avg</div>
+                    <div className="text-2xl sm:text-3xl font-bold text-white">{formatTime(Math.round(stats.totalTime / quizData.length))}</div>
                   </div>
                 </div>
 
-                <div className="flex justify-center gap-8 mb-12 text-sm font-mono text-gray-400">
+                <div className="flex flex-wrap justify-center gap-4 sm:gap-8 mb-12 text-sm font-mono text-gray-400">
                   <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-cyan-400"></span><span className="text-white">{stats.correct}</span> Passed</div>
                   <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-red-500"></span><span className="text-white">{stats.incorrect}</span> Failed</div>
                   <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-[#404040]"></span><span className="text-white">{stats.skipped}</span> Ignored</div>
@@ -520,8 +520,8 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
             </div>
           </div>
 
-          <div className="p-8 md:p-12">
-            <div className="text-lg md:text-xl font-sans text-gray-200 mb-10 leading-relaxed max-w-3xl">
+          <div className="p-6 sm:p-8 md:p-12">
+            <div className="text-lg md:text-xl font-sans text-gray-200 mb-8 md:mb-10 leading-relaxed max-w-3xl">
               <MathText content={quizData[currentMcqIndex].question} />
             </div>
 

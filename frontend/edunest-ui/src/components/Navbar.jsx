@@ -103,7 +103,7 @@ const Navbar = ({ results, setResults, setFiles, setSubject, toggleFullscreen, v
               }`}
               title="Quiz History & Analytics"
             >
-              <TrendingUp size={12} /> History
+              <TrendingUp size={12} /> <span className="hidden sm:inline">History</span>
               <span className="ml-0.5 bg-indigo-500 text-white font-bold text-[9px] rounded-full w-4 h-4 flex items-center justify-center">
                 {quizHistory.length > 9 ? '9+' : quizHistory.length}
               </span>
@@ -114,9 +114,10 @@ const Navbar = ({ results, setResults, setFiles, setSubject, toggleFullscreen, v
           {isLanding && (
             <button
               onClick={() => setView('app')}
-              className="group flex items-center gap-2 px-4 py-1.5 bg-white text-black rounded-lg font-bold text-xs hover:bg-gray-100 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+              className="group flex items-center gap-2 px-3 sm:px-4 py-1.5 bg-white text-black rounded-lg font-bold text-xs hover:bg-gray-100 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
             >
-              Launch App
+              <span className="hidden sm:inline">Launch App</span>
+              <span className="sm:hidden">Launch</span>
               <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
             </button>
           )}
@@ -125,7 +126,7 @@ const Navbar = ({ results, setResults, setFiles, setSubject, toggleFullscreen, v
           {!isLanding && (
             <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#121212] border ${border} text-xs shadow-sm transition-all duration-500`}>
               <div className={`w-2 h-2 rounded-full transition-all duration-500 ${dot}`} />
-              <span className={`transition-colors duration-500 ${text}`}>{label}</span>
+              <span className={`transition-colors duration-500 ${text} hidden sm:inline`}>{label}</span>
             </span>
           )}
         </div>

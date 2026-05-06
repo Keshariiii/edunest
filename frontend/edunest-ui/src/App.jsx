@@ -348,7 +348,7 @@ export default function App() {
 
                 {/* Tab Bar */}
                 {!isFullscreen && (
-                  <div className="no-print flex gap-1 overflow-x-auto pb-4 mb-6 md:mb-8 border-b border-[#262626] no-scrollbar relative w-full items-center">
+                  <div className="no-print flex gap-1 overflow-x-auto pb-4 mb-6 md:mb-8 border-b border-[#262626] no-scrollbar relative w-full items-center snap-x snap-mandatory scroll-smooth">
                     <div className="absolute left-0 bottom-4 w-full h-[1px] bg-[#262626]" />
                   {[
                       { id: 'formulas',   icon: <Calculator size={14} />, label: 'formulas' },
@@ -359,7 +359,7 @@ export default function App() {
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`px-5 py-2.5 font-mono text-xs md:text-sm flex items-center gap-2 capitalize transition-all duration-300 whitespace-nowrap relative z-10 ${
+                        className={`px-4 md:px-5 py-2.5 font-mono text-xs md:text-sm flex items-center gap-2 capitalize transition-all duration-300 whitespace-nowrap relative z-10 snap-start ${
                           activeTab === tab.id
                             ? 'text-white bg-[#121212] border border-[#262626] border-b-transparent rounded-t-lg'
                             : 'text-gray-500 hover:text-gray-300 bg-transparent border border-transparent hover:bg-[#121212]/50'
