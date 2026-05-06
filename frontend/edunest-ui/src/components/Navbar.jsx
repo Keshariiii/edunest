@@ -9,7 +9,7 @@ const Navbar = ({ results, setResults, setFiles, setSubject, toggleFullscreen, v
   const [apiStatus, setApiStatus] = useState('checking'); // 'checking' | 'active' | 'inactive'
 
   useEffect(() => {
-    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const apiBase = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
 
     const checkHealth = async () => {
       try {

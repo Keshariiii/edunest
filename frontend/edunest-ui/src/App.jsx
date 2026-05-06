@@ -125,7 +125,7 @@ export default function App() {
     const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const apiBase = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
       const response = await fetch(`${apiBase}/api/generate-study-material`, {
         method: 'POST',
         body: formData,
@@ -168,7 +168,7 @@ export default function App() {
     if (!files.length || !subject) return;
     setRegeneratingSection(sectionType);
     try {
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const apiBase = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
       const formData = new FormData();
       files.forEach(f => formData.append('files', f));
       formData.append('subject', subject);

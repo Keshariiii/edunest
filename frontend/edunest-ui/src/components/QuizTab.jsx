@@ -38,7 +38,7 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
     formData.append("num_questions", quizConfig.numQuestions);
 
     try {
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const apiBase = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
       const response = await fetch(`${apiBase}/api/generate-quiz`, { method: "POST", body: formData });
 
       if (!response.ok) {
