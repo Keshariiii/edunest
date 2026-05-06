@@ -65,7 +65,7 @@ const AnalyticsPanel = ({ quizHistory, onClearHistory, onClose }) => {
             <TrendingUp className="text-indigo-400" size={20} />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white tracking-tight">Quiz Analytics</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Quiz Analytics</h2>
             <p className="text-gray-500 font-mono text-[11px]">{quizHistory.length} attempt{quizHistory.length !== 1 ? 's' : ''} recorded</p>
           </div>
         </div>
@@ -73,7 +73,7 @@ const AnalyticsPanel = ({ quizHistory, onClearHistory, onClose }) => {
           {quizHistory.length > 0 && (
             <button
               onClick={onClearHistory}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#111] border border-[#262626] text-gray-500 hover:text-red-400 hover:border-red-500/30 font-mono text-[11px] transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#262626] text-gray-500 hover:text-red-400 hover:border-red-500/30 font-mono text-[11px] transition-all"
             >
               <Trash2 size={10} /> Clear
             </button>
@@ -81,7 +81,7 @@ const AnalyticsPanel = ({ quizHistory, onClearHistory, onClose }) => {
           {onClose && (
             <button
               onClick={onClose}
-              className="px-4 py-1.5 rounded-lg bg-[#111] border border-[#262626] text-gray-400 hover:text-white font-mono text-xs transition-all"
+              className="px-4 py-1.5 rounded-lg bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#262626] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white font-mono text-xs transition-all"
             >
               ✕ Close
             </button>
@@ -90,9 +90,9 @@ const AnalyticsPanel = ({ quizHistory, onClearHistory, onClose }) => {
       </div>
 
       {quizHistory.length === 0 ? (
-        <motion.div {...fadeUp()} className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-16 text-center">
+        <motion.div {...fadeUp()} className="bg-gray-50 dark:bg-[#0d0d0d] border border-gray-200 dark:border-[#1a1a1a] rounded-2xl p-16 text-center">
           <BarChart3 size={40} className="text-gray-700 mx-auto mb-5" />
-          <h3 className="text-white font-bold text-lg mb-2">No quiz history yet</h3>
+          <h3 className="text-gray-900 dark:text-white font-bold text-lg mb-2">No quiz history yet</h3>
           <p className="text-gray-500 font-mono text-sm">Complete a quiz to see your analytics here.</p>
         </motion.div>
       ) : (
@@ -105,9 +105,9 @@ const AnalyticsPanel = ({ quizHistory, onClearHistory, onClose }) => {
               { icon: Zap,      label: 'Best Score',     value: `${stats.bestAccuracy}%`,        sub: 'personal best'  },
               { icon: Clock,    label: 'Study Time',     value: formatTime(stats.totalTime),     sub: 'total time'     },
             ].map(({ icon: Icon, label, value, sub }, i) => (
-              <motion.div key={label} {...fadeUp(i * 0.06)} className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-5 hover:border-indigo-500/20 transition-colors">
+              <motion.div key={label} {...fadeUp(i * 0.06)} className="bg-gray-50 dark:bg-[#0d0d0d] border border-gray-200 dark:border-[#1a1a1a] rounded-2xl p-5 hover:border-indigo-500/20 transition-colors">
                 <Icon size={14} className="text-indigo-400 mb-3" />
-                <div className="text-2xl font-black text-white mb-1">{value}</div>
+                <div className="text-2xl font-black text-gray-900 dark:text-white mb-1">{value}</div>
                 <div className="text-[10px] font-mono text-gray-600 uppercase tracking-widest">{sub}</div>
               </motion.div>
             ))}
@@ -115,7 +115,7 @@ const AnalyticsPanel = ({ quizHistory, onClearHistory, onClose }) => {
 
           {/* Accuracy trend sparkline */}
           {sparkData && (
-            <motion.div {...fadeUp(0.1)} className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-6 mb-8">
+            <motion.div {...fadeUp(0.1)} className="bg-gray-50 dark:bg-[#0d0d0d] border border-gray-200 dark:border-[#1a1a1a] rounded-2xl p-6 mb-8">
               <p className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                 <TrendingUp size={12} className="text-indigo-400" /> Accuracy Trend — Last {sparkData.last10.length} Attempts
               </p>
@@ -162,8 +162,8 @@ const AnalyticsPanel = ({ quizHistory, onClearHistory, onClose }) => {
           )}
 
           {/* History list */}
-          <motion.div {...fadeUp(0.15)} className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#1a1a1a] flex items-center justify-between">
+          <motion.div {...fadeUp(0.15)} className="bg-gray-50 dark:bg-[#0d0d0d] border border-gray-200 dark:border-[#1a1a1a] rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-[#1a1a1a] flex items-center justify-between">
               <span className="font-mono text-xs text-gray-500 uppercase tracking-widest">Attempt History</span>
               <span className="font-mono text-[10px] text-gray-700">{quizHistory.length} record{quizHistory.length !== 1 ? 's' : ''}</span>
             </div>
@@ -172,7 +172,7 @@ const AnalyticsPanel = ({ quizHistory, onClearHistory, onClose }) => {
                 <motion.div
                   key={i}
                   {...fadeUp(i * 0.03)}
-                  className="px-6 py-4 flex items-center gap-4 hover:bg-[#111] transition-colors"
+                  className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-[#111] transition-colors"
                 >
                   {/* Rank */}
                   <span className="font-mono text-xs text-gray-700 w-6 shrink-0">#{i + 1}</span>
@@ -189,7 +189,7 @@ const AnalyticsPanel = ({ quizHistory, onClearHistory, onClose }) => {
                         strokeLinecap="round"
                       />
                     </svg>
-                    <span className="absolute inset-0 flex items-center justify-center font-mono text-[9px] font-bold text-white">
+                    <span className="absolute inset-0 flex items-center justify-center font-mono text-[9px] font-bold text-gray-900 dark:text-white">
                       {attempt.accuracy}
                     </span>
                   </div>
@@ -197,7 +197,7 @@ const AnalyticsPanel = ({ quizHistory, onClearHistory, onClose }) => {
                   {/* Details */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="font-bold text-sm text-white">{attempt.subject}</span>
+                      <span className="font-bold text-sm text-gray-900 dark:text-white">{attempt.subject}</span>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border font-mono text-[10px] ${badgeColor(attempt.accuracy)}`}>
                         {attempt.accuracy >= 80 ? '🏆' : attempt.accuracy >= 50 ? '📈' : '📉'} {attempt.accuracy}%
                       </span>

@@ -26,18 +26,18 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="mt-10 p-8 bg-[#121212] border border-red-500/30 rounded-xl max-w-2xl mx-auto text-left">
+        <div className="mt-10 p-8 bg-white dark:bg-[#121212] border border-red-500/30 rounded-xl max-w-2xl mx-auto text-left">
           <div className="flex items-center gap-3 mb-4">
             <AlertTriangle className="text-red-400 shrink-0" size={22} />
             <h3 className="text-red-400 font-bold font-mono text-sm uppercase tracking-widest">Render Error — Results could not be displayed</h3>
           </div>
-          <pre className="text-gray-400 font-mono text-xs whitespace-pre-wrap bg-[#0a0a0a] p-4 rounded-md border border-[#262626] mb-6">
+          <pre className="text-gray-600 dark:text-gray-400 font-mono text-xs whitespace-pre-wrap bg-[#fafafa] dark:bg-[#0a0a0a] p-4 rounded-md border border-gray-200 dark:border-[#262626] mb-6">
             {this.state.error?.message || 'Unknown rendering error'}
           </pre>
           <p className="text-gray-500 text-xs font-mono mb-6">This is usually caused by a malformed formula or special character in the AI output. Try uploading a clearer image/PDF or a different page.</p>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
-            className="px-6 py-2 bg-white text-black rounded-md font-bold text-sm hover:bg-gray-200 transition-colors"
+            className="px-6 py-2 bg-gray-900 dark:bg-white text-white dark:text-black rounded-md font-bold text-sm hover:bg-gray-200 transition-colors"
           >
             Retry
           </button>
@@ -58,6 +58,9 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
   const [activeTab, setActiveTab] = useState('formulas');
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem('theme') || 'dark'; } catch { return 'dark'; }
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -76,6 +79,16 @@ export default function App() {
   const handleQuizComplete = (result) => {
     setQuizHistory(prev => [result, ...prev].slice(0, 50)); // keep last 50 attempts
   };
+
+  // Persist theme to document element
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   // Scroll to top whenever the view changes
   useEffect(() => {
@@ -195,13 +208,13 @@ export default function App() {
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className={`flex flex-col bg-[#0a0a0a] text-gray-100 font-sans selection:bg-indigo-500/30 transition-colors duration-300 ease-in-out ${(inResults || isFullscreen) ? 'h-screen overflow-hidden print:h-auto print:overflow-visible' : 'min-h-screen'}`}>
+    <div className={`flex flex-col bg-[#fafafa] dark:bg-[#0a0a0a] text-gray-800 dark:text-gray-100 font-sans selection:bg-indigo-500/30 transition-colors duration-300 ease-in-out ${(inResults || isFullscreen) ? 'h-screen overflow-hidden print:h-auto print:overflow-visible' : 'min-h-screen'}`}>
 
       {/* Fixed background decorations */}
       <div className="fixed inset-0 z-0 pointer-events-none no-print">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:40px_40px]" />
-        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[150px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000005_1px,transparent_1px),linear-gradient(to_bottom,#00000005_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:40px_40px]" />
+        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-indigo-500/30 dark:bg-indigo-500/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-purple-500/30 dark:bg-purple-500/10 rounded-full blur-[150px]" />
       </div>
 
       {/* Global styles */}
@@ -242,16 +255,18 @@ export default function App() {
       {/* Navbar — hidden in fullscreen mode */}
       {!isFullscreen && (
         <Navbar
+          view={view}
+          setView={setView}
           results={results}
           setResults={setResults}
           setFiles={setFiles}
           setSubject={setSubject}
           toggleFullscreen={toggleFullscreen}
-          view={view}
-          setView={setView}
           quizHistory={quizHistory}
           showAnalytics={showAnalytics}
           setShowAnalytics={setShowAnalytics}
+          theme={theme}
+          setTheme={setTheme}
         />
       )}
 
@@ -259,7 +274,7 @@ export default function App() {
       {isFullscreen && (
         <button
           onClick={toggleFullscreen}
-          className="fixed top-4 right-4 z-[60] bg-[#121212] border border-[#262626] text-gray-400 hover:text-white p-2.5 rounded-full shadow-2xl transition-all hover:scale-110 no-print"
+          className="fixed top-4 right-4 z-[60] bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#262626] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white p-2.5 rounded-full shadow-2xl transition-all hover:scale-110 no-print"
           title="Exit Fullscreen"
         >
           <Minimize size={18} />
@@ -269,7 +284,7 @@ export default function App() {
       {/* ── MAIN CONTENT ──────────────────────────────────────────────────── */}
       <main
         ref={mainContainerRef}
-        className={`relative z-10 w-full print:overflow-visible print:block print:h-auto ${(inResults || isFullscreen) ? 'flex-1 overflow-y-auto' : ''} ${isFullscreen ? 'fixed inset-0 z-50 bg-[#0a0a0a]' : (inResults ? 'pt-8 pb-8' : '')}`}
+        className={`relative z-10 w-full print:overflow-visible print:block print:h-auto ${(inResults || isFullscreen) ? 'flex-1 overflow-y-auto' : ''} ${isFullscreen ? 'fixed inset-0 z-50 bg-[#fafafa] dark:bg-[#0a0a0a]' : (inResults ? 'pt-8 pb-8' : '')}`}
       >
 
         {/* ── ANALYTICS PANEL ───────────────────────────────────────────── */}
@@ -327,11 +342,11 @@ export default function App() {
 
                 {/* Chapter / Topic Metadata */}
                 {results?.metadata?.chapter_title && (
-                  <div className="no-print mb-6 bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl p-4 animate-in fade-in duration-500">
+                  <div className="no-print mb-6 bg-gray-50 dark:bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl p-4 animate-in fade-in duration-500">
                     <div className="flex items-start gap-3">
                       <BookOpen size={14} className="text-indigo-400 mt-0.5 shrink-0" />
                       <div>
-                        <p className="text-white font-bold text-sm mb-1.5">{results.metadata.chapter_title}</p>
+                        <p className="text-gray-900 dark:text-white font-bold text-sm mb-1.5">{results.metadata.chapter_title}</p>
                         {results.metadata.topics_covered?.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
                             {results.metadata.topics_covered.map(t => (
@@ -348,7 +363,7 @@ export default function App() {
 
                 {/* Tab Bar */}
                 {!isFullscreen && (
-                  <div className="no-print flex gap-1 overflow-x-auto pb-4 mb-6 md:mb-8 border-b border-[#262626] no-scrollbar relative w-full items-center snap-x snap-mandatory scroll-smooth">
+                  <div className="no-print flex gap-1 overflow-x-auto pb-4 mb-6 md:mb-8 border-b border-gray-200 dark:border-[#262626] no-scrollbar relative w-full items-center snap-x snap-mandatory scroll-smooth">
                     <div className="absolute left-0 bottom-4 w-full h-[1px] bg-[#262626]" />
                   {[
                       { id: 'formulas',   icon: <Calculator size={14} />, label: 'formulas' },
@@ -361,8 +376,8 @@ export default function App() {
                         onClick={() => setActiveTab(tab.id)}
                         className={`px-4 md:px-5 py-2.5 font-mono text-xs md:text-sm flex items-center gap-2 capitalize transition-all duration-300 whitespace-nowrap relative z-10 snap-start ${
                           activeTab === tab.id
-                            ? 'text-white bg-[#121212] border border-[#262626] border-b-transparent rounded-t-lg'
-                            : 'text-gray-500 hover:text-gray-300 bg-transparent border border-transparent hover:bg-[#121212]/50'
+                            ? 'text-gray-900 dark:text-white bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#262626] border-b-transparent rounded-t-lg'
+                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white bg-transparent border border-transparent hover:bg-white dark:hover:bg-[#121212]/50'
                         }`}
                       >
                         {tab.icon} {tab.label}.md
@@ -377,7 +392,7 @@ export default function App() {
                     <button
                       onClick={() => handleRegenerateSection(activeTab === 'notes' ? 'notes' : activeTab)}
                       disabled={!!regeneratingSection}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#111] border border-[#262626] text-gray-500 hover:text-indigo-400 hover:border-indigo-500/30 font-mono text-[11px] transition-all disabled:opacity-40"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#262626] text-gray-500 hover:text-indigo-400 hover:border-indigo-500/30 font-mono text-[11px] transition-all disabled:opacity-40"
                     >
                       <RefreshCw size={11} className={regeneratingSection === activeTab ? 'animate-spin text-indigo-400' : ''} />
                       {regeneratingSection === activeTab ? 'Regenerating...' : `Regenerate ${activeTab}`}

@@ -8,9 +8,12 @@
   scrollbar-color: #262626 transparent;
 }
 
-/* Force dark mode color scheme at the browser level */
-html {
+/* Support light mode based on HTML class */
+html.dark {
   color-scheme: dark;
+}
+html {
+  color-scheme: light;
 }
 
 /* Webkit (Chrome, Edge, Safari) */
@@ -27,27 +30,39 @@ html::-webkit-scrollbar, body::-webkit-scrollbar {
   background: transparent;
 }
 
+html.dark::-webkit-scrollbar-track, body.dark::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
 html::-webkit-scrollbar-track, body::-webkit-scrollbar-track {
-  background: #0a0a0a; /* Matches your main bg */
+  background: #fafafa;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #262626;
+  background-color: #d1d5db;
   border-radius: 10px;
+}
+
+html.dark::-webkit-scrollbar-thumb, body.dark::-webkit-scrollbar-thumb {
+  background-color: #262626;
+  border: 2px solid #0a0a0a;
 }
 
 html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
-  background-color: #262626;
-  border-radius: 10px;
-  border: 2px solid #0a0a0a; /* Creates a nice padded effect */
+  background-color: #d1d5db;
+  border: 2px solid #fafafa;
 }
 
 ::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af;
+}
+
+html.dark::-webkit-scrollbar-thumb:hover, body.dark::-webkit-scrollbar-thumb:hover {
   background-color: #404040;
 }
 
 html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover {
-  background-color: #404040;
+  background-color: #9ca3af;
 }
 
 ::-webkit-scrollbar-corner {
@@ -62,10 +77,14 @@ html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover {
     print-color-adjust: exact !important;
   }
 
-  /* Apply the dark background to the absolute root elements */
+  /* Apply the background depending on theme */
+  html.dark, body.dark, html.dark #root {
+    background-color: #0a0a0a !important; 
+    color: #f3f4f6 !important; 
+  }
   html, body, #root {
-    background-color: #0a0a0a !important; /* Your main background color */
-    color: #f3f4f6 !important; /* text-gray-100 */
+    background-color: #fafafa !important; 
+    color: #111827 !important;
     height: auto !important;
     min-height: auto !important;
     overflow: visible !important;

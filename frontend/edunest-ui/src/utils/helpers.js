@@ -9,7 +9,8 @@ export const sanitizeFlashcardText = (text) => {
 export const sanitizeFormula = (text) => {
   if (!text) return "";
   text = text.trim();
-  if (text.startsWith('$') || text.startsWith('\\[')) return text;
+  // If the AI already provided inline ($...$) or block ($$...$$) delimiters, don't wrap it again
+  if (text.includes('$') || text.includes('\\[')) return text;
   return `$$${text}$$`;
 };
 
