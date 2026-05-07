@@ -109,7 +109,17 @@ const Navbar = ({
 
         {/* Logo — always clickable back to landing */}
         <button
-          onClick={() => { setResults(null); setFiles([]); setSubject(''); setView('landing'); setShowAnalytics?.(false); }}
+          onClick={() => { 
+            if (isLanding) {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+              setResults(null); 
+              setFiles([]); 
+              setSubject(''); 
+              setView('app'); 
+              setShowAnalytics?.(false); 
+            }
+          }}
           className="flex items-center gap-3 group focus:outline-none"
           title="Return to Home"
         >
