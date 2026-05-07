@@ -1,6 +1,6 @@
 /* eslint-disable */
 import React, { useState } from 'react';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, Check, X, AlertCircle, GraduationCap, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, Check, X, AlertCircle, GraduationCap, Sparkles, ArrowLeft } from 'lucide-react';
 
 // ── Password Strength Calculator ───────────────────────────────────────────────
 function getPasswordStrength(password) {
@@ -28,13 +28,13 @@ function PasswordRequirements({ password }) {
     { label: 'One digit', met: /[0-9]/.test(password) },
   ];
   return (
-    <div className="mt-2 space-y-1">
+    <div className="mt-3 ml-2 space-y-1.5">
       {reqs.map((r) => (
-        <div key={r.label} className="flex items-center gap-1.5 text-[11px] font-mono">
+        <div key={r.label} className="flex items-center gap-2 text-[11px] font-mono">
           {r.met ? (
-            <Check size={11} className="text-emerald-500 shrink-0" />
+            <Check size={12} className="text-emerald-500 shrink-0" />
           ) : (
-            <X size={11} className="text-gray-400 shrink-0" />
+            <X size={12} className="text-gray-400 shrink-0" />
           )}
           <span className={r.met ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}>{r.label}</span>
         </div>
@@ -44,7 +44,7 @@ function PasswordRequirements({ password }) {
 }
 
 // ── Main AuthView Component ────────────────────────────────────────────────────
-export default function AuthView({ onAuthSuccess, initialMode = 'login' }) {
+export default function AuthView({ onAuthSuccess, initialMode = 'login', onBack }) {
   const [mode, setMode] = useState(initialMode); // 'login' | 'register' | 'forgot'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -155,11 +155,19 @@ export default function AuthView({ onAuthSuccess, initialMode = 'login' }) {
 
   // ── Shared input style ────────────────────────────────────────────────────────
   const inputClass =
-    'w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#262626] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all';
+    'w-full pl-11 pr-4 py-3 rounded-xl bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#262626] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all';
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 relative">
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="absolute top-6 left-6 md:top-8 md:left-8 flex items-center gap-1.5 px-3 py-1.5 bg-white/50 dark:bg-black/20 hover:bg-white dark:hover:bg-black/40 backdrop-blur-md text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-all text-xs font-bold rounded-lg border border-gray-200/50 dark:border-white/5 shadow-sm"
+        >
+          <ArrowLeft size={14} /> Back
+        </button>
+      )}
       <div className="w-full max-w-md">
 
         {/* Logo + Tagline */}
@@ -201,8 +209,8 @@ export default function AuthView({ onAuthSuccess, initialMode = 'login' }) {
           {mode === 'register' && (
             <form onSubmit={handleRegister} className="space-y-4">
               {/* Username */}
-              <div className="relative">
-                <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <div className="relative flex items-center">
+                <User size={16} className="absolute left-4 text-gray-400 pointer-events-none" />
                 <input
                   id="register-username"
                   type="text"
@@ -214,8 +222,8 @@ export default function AuthView({ onAuthSuccess, initialMode = 'login' }) {
                 />
               </div>
               {/* Email */}
-              <div className="relative">
-                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <div className="relative flex items-center">
+                <Mail size={16} className="absolute left-4 text-gray-400 pointer-events-none" />
                 <input
                   id="register-email"
                   type="email"
@@ -228,8 +236,8 @@ export default function AuthView({ onAuthSuccess, initialMode = 'login' }) {
               </div>
               {/* Password */}
               <div>
-                <div className="relative">
-                  <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <div className="relative flex items-center">
+                  <Lock size={16} className="absolute left-4 text-gray-400 pointer-events-none" />
                   <input
                     id="register-password"
                     type={showPassword ? 'text' : 'password'}
@@ -242,15 +250,15 @@ export default function AuthView({ onAuthSuccess, initialMode = 'login' }) {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="absolute right-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center justify-center"
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
                 {/* Strength bar */}
                 {password && (
-                  <div className="mt-2">
-                    <div className="flex gap-1">
+                  <div className="mt-3 ml-1 mr-1">
+                    <div className="flex gap-1.5">
                       {[1, 2, 3, 4].map((i) => (
                         <div
                           key={i}
@@ -260,7 +268,7 @@ export default function AuthView({ onAuthSuccess, initialMode = 'login' }) {
                         />
                       ))}
                     </div>
-                    <p className={`text-[10px] font-mono mt-1 ${
+                    <p className={`text-[10px] font-mono mt-1.5 ml-1 ${
                       strength.score <= 1 ? 'text-red-500' :
                       strength.score <= 2 ? 'text-orange-500' :
                       strength.score <= 3 ? 'text-yellow-500' : 'text-emerald-500'
@@ -272,8 +280,8 @@ export default function AuthView({ onAuthSuccess, initialMode = 'login' }) {
                 <PasswordRequirements password={password} />
               </div>
               {/* Confirm Password */}
-              <div className="relative">
-                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <div className="relative flex items-center">
+                <Lock size={16} className="absolute left-4 text-gray-400 pointer-events-none" />
                 <input
                   id="register-confirm-password"
                   type={showPassword ? 'text' : 'password'}
@@ -284,7 +292,7 @@ export default function AuthView({ onAuthSuccess, initialMode = 'login' }) {
                   required
                 />
                 {confirmPassword && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="absolute right-3.5 flex items-center justify-center">
                     {password === confirmPassword ? (
                       <Check size={16} className="text-emerald-500" />
                     ) : (
@@ -294,15 +302,15 @@ export default function AuthView({ onAuthSuccess, initialMode = 'login' }) {
                 )}
               </div>
               {/* Terms */}
-              <label className="flex items-start gap-2 cursor-pointer">
+              <label className="flex items-center gap-2.5 cursor-pointer ml-1">
                 <input
                   id="register-terms"
                   type="checkbox"
                   checked={agreedToTerms}
                   onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded border-gray-300 dark:border-[#333] text-indigo-600 focus:ring-indigo-500 bg-gray-50 dark:bg-[#111]"
+                  className="m-0 w-4 h-4 rounded border-gray-300 dark:border-[#333] text-indigo-600 focus:ring-indigo-500 bg-gray-50 dark:bg-[#111]"
                 />
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-gray-500 dark:text-gray-400 pt-px">
                   I agree to the <span className="text-indigo-600 dark:text-indigo-400 underline cursor-pointer">Terms of Service</span> and <span className="text-indigo-600 dark:text-indigo-400 underline cursor-pointer">Privacy Policy</span>
                 </span>
               </label>
@@ -330,8 +338,8 @@ export default function AuthView({ onAuthSuccess, initialMode = 'login' }) {
           {mode === 'login' && (
             <form onSubmit={handleLogin} className="space-y-4">
               {/* Email */}
-              <div className="relative">
-                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <div className="relative flex items-center">
+                <Mail size={16} className="absolute left-4 text-gray-400 pointer-events-none" />
                 <input
                   id="login-email"
                   type="email"
@@ -343,8 +351,8 @@ export default function AuthView({ onAuthSuccess, initialMode = 'login' }) {
                 />
               </div>
               {/* Password */}
-              <div className="relative">
-                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <div className="relative flex items-center">
+                <Lock size={16} className="absolute left-4 text-gray-400 pointer-events-none" />
                 <input
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
@@ -357,22 +365,22 @@ export default function AuthView({ onAuthSuccess, initialMode = 'login' }) {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  className="absolute right-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center justify-center"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
               {/* Remember me + Forgot */}
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div className="flex items-center justify-between ml-1">
+                <label className="flex items-center gap-2.5 cursor-pointer">
                   <input
                     id="login-remember"
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 dark:border-[#333] text-indigo-600 focus:ring-indigo-500 bg-gray-50 dark:bg-[#111]"
+                    className="m-0 w-4 h-4 rounded border-gray-300 dark:border-[#333] text-indigo-600 focus:ring-indigo-500 bg-gray-50 dark:bg-[#111]"
                   />
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Remember me</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 pt-px">Remember me</span>
                 </label>
                 <button
                   type="button"
@@ -408,8 +416,8 @@ export default function AuthView({ onAuthSuccess, initialMode = 'login' }) {
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 Enter the email address associated with your account and we'll send you a link to reset your password.
               </p>
-              <div className="relative">
-                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <div className="relative flex items-center">
+                <Mail size={16} className="absolute left-4 text-gray-400 pointer-events-none" />
                 <input
                   id="forgot-email"
                   type="email"

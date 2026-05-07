@@ -368,7 +368,11 @@ export default function App() {
 
         {/* ── AUTHENTICATION ────────────────────────────────────────────── */}
         {isAuthView && !authLoading && (
-          <AuthView onAuthSuccess={handleAuthSuccess} initialMode={view === 'login' ? 'login' : 'register'} />
+          <AuthView 
+            onAuthSuccess={handleAuthSuccess} 
+            initialMode={view === 'login' ? 'login' : 'register'} 
+            onBack={() => setView('landing')}
+          />
         )}
 
         {/* ── USER PROFILE ──────────────────────────────────────────────── */}

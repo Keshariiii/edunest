@@ -12,6 +12,11 @@ export default function UserProfile({ user, token, onLogout, onUserUpdate, onBac
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Delete account state
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteConfirmWord, setDeleteConfirmWord] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
+
   const apiBase = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
 
   const handleUpdateUsername = async () => {
@@ -66,6 +71,33 @@ export default function UserProfile({ user, token, onLogout, onUserUpdate, onBac
     } catch (err) {
       setError(err.message);
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async (e) => {
+    e.preventDefault();
+    if (deleteConfirmWord !== 'DELETE') {
+      setError('Please type DELETE to confirm');
+      return;
+    }
+    setLoading(true); setError(''); setSuccess('');
+    try {
+      const res = await fetch(`${apiBase}/api/users/me`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ password: deletePassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to delete account');
+      
+      // Account deleted successfully, log out and redirect
+      onLogout();
+    } catch (err) {
+      setError(err.message);
       setLoading(false);
     }
   };
@@ -207,14 +239,66 @@ export default function UserProfile({ user, token, onLogout, onUserUpdate, onBac
           )}
         </div>
 
-        {/* Logout */}
-        <div className="pt-3 border-t border-gray-100 dark:border-[#1e1e1e]">
+        {/* Logout & Danger Zone */}
+        <div className="pt-3 border-t border-gray-100 dark:border-[#1e1e1e] flex flex-col gap-3">
           <button
             onClick={onLogout}
-            className="flex items-center gap-2 text-xs font-mono text-red-500 hover:text-red-600 transition-colors"
+            className="flex items-center gap-2 text-xs font-mono text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors self-start"
           >
             <LogOut size={12} /> Sign Out
           </button>
+
+          {!deletingAccount ? (
+            <button
+              onClick={() => { setDeletingAccount(true); setError(''); setSuccess(''); }}
+              className="flex items-center gap-2 text-xs font-mono text-red-500 hover:text-red-600 transition-colors self-start mt-4"
+            >
+              <AlertCircle size={12} /> Delete Account
+            </button>
+          ) : (
+            <div className="mt-4 p-4 border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/5 rounded-xl space-y-3">
+              <h4 className="text-red-600 dark:text-red-400 text-sm font-bold flex items-center gap-2">
+                <AlertCircle size={14} /> Danger Zone
+              </h4>
+              <p className="text-xs text-red-600/80 dark:text-red-400/80 font-mono">
+                This action is permanent and cannot be undone. All your generated materials will be lost.
+              </p>
+              <form onSubmit={handleDeleteAccount} className="space-y-3">
+                <input
+                  type="password"
+                  placeholder="Verify your password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-white dark:bg-[#111] border border-red-200 dark:border-red-500/30 text-gray-900 dark:text-white placeholder-gray-400 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Type DELETE to confirm"
+                  value={deleteConfirmWord}
+                  onChange={(e) => setDeleteConfirmWord(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-white dark:bg-[#111] border border-red-200 dark:border-red-500/30 text-gray-900 dark:text-white placeholder-gray-400 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40 uppercase"
+                  required
+                />
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="submit"
+                    disabled={loading || deleteConfirmWord !== 'DELETE'}
+                    className="px-4 py-2 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {loading ? <Loader2 size={12} className="animate-spin" /> : 'Permanently Delete'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setDeletingAccount(false); setDeleteConfirmWord(''); setDeletePassword(''); }}
+                    className="px-4 py-2 bg-gray-200 dark:bg-[#222] text-gray-700 dark:text-gray-300 text-xs font-bold rounded-lg hover:bg-gray-300 dark:hover:bg-[#333] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
       </div>
     </div>

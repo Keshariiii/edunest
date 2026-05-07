@@ -344,3 +344,26 @@ def change_password(
     user.updated_at = datetime.utcnow()
     db.commit()
     return {"message": "Password changed successfully"}
+
+
+class DeleteAccountRequest(BaseModel):
+    password: str
+
+
+@user_router.delete("/me")
+def delete_account(
+    req: DeleteAccountRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not verify_password(req.password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Incorrect password. Account deletion failed.")
+    
+    # Delete all associated refresh tokens
+    db.query(RefreshToken).filter(RefreshToken.user_id == user.id).delete()
+    
+    # Delete the user
+    db.delete(user)
+    db.commit()
+    return {"message": "Account successfully deleted"}
+
