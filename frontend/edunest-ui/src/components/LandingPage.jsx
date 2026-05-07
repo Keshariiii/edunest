@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   GraduationCap, Sparkles, Zap, ArrowRight, UploadCloud,
   Calculator, FileText, Layers, BrainCircuit,
-  CheckCircle, Lock, Clock, Cpu
+  CheckCircle, Lock, Clock, Cpu, Github, Twitter
 } from 'lucide-react';
 
 // ─── Animation helpers ────────────────────────────────────────────────────────
@@ -173,16 +173,42 @@ const LandingPage = ({ onGetStarted }) => {
       </section>
 
       {/* ── FOOTER ────────────────────────────────────────────────────────── */}
-      <footer className="border-t border-gray-200 dark:border-[#141414] mt-4 py-8 px-6">
-        <div className="max-w-4xl mx-auto flex flex-col items-center gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-              <GraduationCap className="text-white" size={13} />
+      <footer className="relative mt-20 pt-16 pb-8 border-t border-gray-200 dark:border-[#1a1a1a] overflow-hidden bg-gray-50/50 dark:bg-[#050505]">
+        {/* Subtle glow effect */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-64 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-t-full blur-3xl pointer-events-none"></div>
+        
+        <div className="relative max-w-5xl mx-auto px-6">
+          <div className="flex flex-col items-center text-center gap-6 mb-12">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/20">
+                <GraduationCap className="text-white" size={18} />
+              </div>
+              <span className="font-bold text-lg text-gray-900 dark:text-white tracking-tight">EduNest</span>
+              <Sparkles size={12} className="text-indigo-400 opacity-80" />
             </div>
-            <span className="font-bold text-sm text-gray-900 dark:text-white tracking-tight">EduNest</span>
-            <Sparkles size={9} className="text-indigo-400 opacity-60 animate-pulse" />
+            
+            <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed max-w-sm">
+              Transform any document into an interactive, high-yield learning experience powered by AI.
+            </p>
+            
+            <div className="flex items-center gap-4">
+              <a href="https://x.com/kesharinaman79" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] flex items-center justify-center text-gray-500 hover:text-indigo-500 hover:border-indigo-500/30 transition-colors shadow-sm">
+                <Twitter size={16} />
+              </a>
+              <a href="https://github.com/Keshariiii" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors shadow-sm">
+                <Github size={16} />
+              </a>
+            </div>
           </div>
-          <p className="text-gray-500 dark:text-gray-600 font-mono text-[11px]">© 2026 EduNest. All rights reserved.</p>
+
+          <div className="pt-8 border-t border-gray-200 dark:border-[#1a1a1a] flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-gray-500 dark:text-gray-500 font-mono text-xs">
+              © 2026 EduNest Inc. All rights reserved.
+            </p>
+            <div className="flex items-center gap-1.5 text-xs font-mono text-gray-400 dark:text-gray-600">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-[pulse_2s_ease-in-out_infinite]"></span> Systems Operational
+            </div>
+          </div>
         </div>
       </footer>
 
