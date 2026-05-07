@@ -213,8 +213,8 @@ export default function App() {
       {/* Fixed background decorations */}
       <div className="fixed inset-0 z-0 pointer-events-none no-print">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000005_1px,transparent_1px),linear-gradient(to_bottom,#00000005_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:40px_40px]" />
-        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-indigo-500/30 dark:bg-indigo-500/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-purple-500/30 dark:bg-purple-500/10 rounded-full blur-[150px]" />
+        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-indigo-400/10 dark:bg-indigo-500/10 rounded-full blur-[140px]" />
+        <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-purple-400/10 dark:bg-purple-500/10 rounded-full blur-[160px]" />
       </div>
 
       {/* Global styles */}
@@ -252,39 +252,27 @@ export default function App() {
         @keyframes scan { 0% { left:-50%; } 100% { left:100%; } }
       `}</style>
 
-      {/* Navbar — hidden in fullscreen mode */}
-      {!isFullscreen && (
-        <Navbar
-          view={view}
-          setView={setView}
-          results={results}
-          setResults={setResults}
-          setFiles={setFiles}
-          setSubject={setSubject}
-          toggleFullscreen={toggleFullscreen}
-          quizHistory={quizHistory}
-          showAnalytics={showAnalytics}
-          setShowAnalytics={setShowAnalytics}
-          theme={theme}
-          setTheme={setTheme}
-        />
-      )}
-
-      {/* Fullscreen exit button */}
-      {isFullscreen && (
-        <button
-          onClick={toggleFullscreen}
-          className="fixed top-4 right-4 z-[60] bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#262626] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white p-2.5 rounded-full shadow-2xl transition-all hover:scale-110 no-print"
-          title="Exit Fullscreen"
-        >
-          <Minimize size={18} />
-        </button>
-      )}
+      {/* Navbar — always visible, aware of fullscreen */}
+      <Navbar
+        view={view}
+        setView={setView}
+        results={results}
+        setResults={setResults}
+        setFiles={setFiles}
+        setSubject={setSubject}
+        toggleFullscreen={toggleFullscreen}
+        isFullscreen={isFullscreen}
+        quizHistory={quizHistory}
+        showAnalytics={showAnalytics}
+        setShowAnalytics={setShowAnalytics}
+        theme={theme}
+        setTheme={setTheme}
+      />
 
       {/* ── MAIN CONTENT ──────────────────────────────────────────────────── */}
       <main
         ref={mainContainerRef}
-        className={`relative z-10 w-full print:overflow-visible print:block print:h-auto ${(inResults || isFullscreen) ? 'flex-1 overflow-y-auto' : ''} ${isFullscreen ? 'fixed inset-0 z-50 bg-[#fafafa] dark:bg-[#0a0a0a]' : (inResults ? 'pt-8 pb-8' : '')}`}
+        className={`relative z-10 w-full print:overflow-visible print:block print:h-auto ${(inResults || isFullscreen) ? 'flex-1 overflow-y-auto' : ''} ${isFullscreen ? 'fixed inset-x-0 bottom-0 top-[56px] z-40 bg-[#fafafa] dark:bg-[#0a0a0a]' : (inResults ? 'pt-8 pb-8' : '')}`}
       >
 
         {/* ── ANALYTICS PANEL ───────────────────────────────────────────── */}
@@ -342,15 +330,15 @@ export default function App() {
 
                 {/* Chapter / Topic Metadata */}
                 {results?.metadata?.chapter_title && (
-                  <div className="no-print mb-6 bg-gray-50 dark:bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl p-4 animate-in fade-in duration-500">
+                  <div className="no-print mb-6 bg-white dark:bg-[#0d0d0d] border border-gray-200 dark:border-[#1e1e1e] rounded-xl p-4 animate-in fade-in duration-500 shadow-sm">
                     <div className="flex items-start gap-3">
-                      <BookOpen size={14} className="text-indigo-400 mt-0.5 shrink-0" />
+                      <BookOpen size={14} className="text-indigo-500 dark:text-indigo-400 mt-0.5 shrink-0" />
                       <div>
                         <p className="text-gray-900 dark:text-white font-bold text-sm mb-1.5">{results.metadata.chapter_title}</p>
                         {results.metadata.topics_covered?.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
                             {results.metadata.topics_covered.map(t => (
-                              <span key={t} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-mono text-[10px]">
+                              <span key={t} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-mono text-[10px]">
                                 <Tag size={8} /> {t}
                               </span>
                             ))}
@@ -361,10 +349,21 @@ export default function App() {
                   </div>
                 )}
 
+                {/* Analytics overlay inside results */}
+                {showAnalytics && !isFullscreen && (
+                  <div className="no-print mb-8">
+                    <AnalyticsPanel
+                      quizHistory={quizHistory}
+                      onClearHistory={() => { setQuizHistory([]); }}
+                      onClose={() => setShowAnalytics(false)}
+                    />
+                  </div>
+                )}
+
                 {/* Tab Bar */}
-                {!isFullscreen && (
+                {!isFullscreen && !showAnalytics && (
                   <div className="no-print flex gap-1 overflow-x-auto pb-4 mb-6 md:mb-8 border-b border-gray-200 dark:border-[#262626] no-scrollbar relative w-full items-center snap-x snap-mandatory scroll-smooth">
-                    <div className="absolute left-0 bottom-4 w-full h-[1px] bg-[#262626]" />
+                    <div className="absolute left-0 bottom-4 w-full h-[1px] bg-gray-200 dark:bg-[#262626]" />
                   {[
                       { id: 'formulas',   icon: <Calculator size={14} />, label: 'formulas' },
                       { id: 'notes',      icon: <FileText size={14} />,   label: 'notes' },
@@ -376,8 +375,8 @@ export default function App() {
                         onClick={() => setActiveTab(tab.id)}
                         className={`px-4 md:px-5 py-2.5 font-mono text-xs md:text-sm flex items-center gap-2 capitalize transition-all duration-300 whitespace-nowrap relative z-10 snap-start ${
                           activeTab === tab.id
-                            ? 'text-gray-900 dark:text-white bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#262626] border-b-transparent rounded-t-lg'
-                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white bg-transparent border border-transparent hover:bg-white dark:hover:bg-[#121212]/50'
+                            ? 'text-gray-900 dark:text-white bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#262626] border-b-transparent rounded-t-lg shadow-sm'
+                            : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white bg-transparent border border-transparent hover:bg-gray-100 dark:hover:bg-[#121212]/50'
                         }`}
                       >
                         {tab.icon} {tab.label}.md
@@ -387,23 +386,23 @@ export default function App() {
                 )}
 
                 {/* Regenerate button for non-quiz tabs */}
-                {activeTab !== 'quiz' && !isFullscreen && (
+                {activeTab !== 'quiz' && !isFullscreen && !showAnalytics && (
                   <div className="no-print flex justify-end mb-3">
                     <button
                       onClick={() => handleRegenerateSection(activeTab === 'notes' ? 'notes' : activeTab)}
                       disabled={!!regeneratingSection}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#262626] text-gray-500 hover:text-indigo-400 hover:border-indigo-500/30 font-mono text-[11px] transition-all disabled:opacity-40"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-400/40 dark:hover:border-indigo-500/30 font-mono text-[11px] transition-all disabled:opacity-40 shadow-sm"
                     >
-                      <RefreshCw size={11} className={regeneratingSection === activeTab ? 'animate-spin text-indigo-400' : ''} />
+                      <RefreshCw size={11} className={regeneratingSection === activeTab ? 'animate-spin text-indigo-500' : ''} />
                       {regeneratingSection === activeTab ? 'Regenerating...' : `Regenerate ${activeTab}`}
                     </button>
                   </div>
                 )}
 
-                {activeTab === 'formulas'   && <FormulasTab   formulas={results.formulas} />}
-                {activeTab === 'notes'      && <NotesTab      notes={results.short_notes} />}
-                {activeTab === 'flashcards' && <FlashcardsTab flashcards={results.flashcards} />}
-                {activeTab === 'quiz'       && (
+                {!showAnalytics && activeTab === 'formulas'   && <FormulasTab   formulas={results.formulas} />}
+                {!showAnalytics && activeTab === 'notes'      && <NotesTab      notes={results.short_notes} />}
+                {!showAnalytics && activeTab === 'flashcards' && <FlashcardsTab flashcards={results.flashcards} />}
+                {!showAnalytics && activeTab === 'quiz'       && (
                   <QuizTab
                     files={files}
                     subject={subject}

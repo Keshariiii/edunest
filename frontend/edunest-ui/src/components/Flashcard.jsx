@@ -9,7 +9,7 @@ const Flashcard = ({ front, back, index, total, direction, isFlipped, setIsFlipp
   return (
     <div className="w-full flex flex-col items-center gap-4">
       {/* Sleek Ultra-Thin Progress Bar */}
-      <div className="w-full max-w-2xl h-[2px] bg-[#262626] rounded-full overflow-hidden">
+      <div className="w-full max-w-2xl h-[2px] bg-gray-200 dark:bg-[#262626] rounded-full overflow-hidden">
         <div 
           className="h-full bg-gray-900 dark:bg-white transition-all duration-500 ease-out"
           style={{ width: `${progress}%` }}

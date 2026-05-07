@@ -2,9 +2,13 @@
 
 /* Global Premium Dark-Mode IDE Scrollbars */
 
-/* Firefox */
+/* Firefox — adapts per theme */
 * {
   scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+html.dark * {
   scrollbar-color: #262626 transparent;
 }
 

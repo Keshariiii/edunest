@@ -261,7 +261,7 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
 
           </div>
 
-          <button onClick={handleGenerateQuiz} disabled={isQuizGenerating} className="w-full bg-gray-900 dark:bg-white text-white dark:text-black py-4 rounded-md font-bold text-sm hover:bg-gray-200 disabled:opacity-50 transition-all">
+          <button onClick={handleGenerateQuiz} disabled={isQuizGenerating} className="w-full bg-gray-900 dark:bg-white text-white dark:text-black py-4 rounded-xl font-bold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 transition-all shadow-sm">
             {isQuizGenerating ? <span className="font-mono">{quizLoadingStatus}</span> : "Execute Test Run"}
           </button>
         </div>
@@ -325,7 +325,7 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
                             const isActuallyCorrect = (q.correct_indices || []).includes(optIdx);
 
                             let btnStyle = "bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#262626] opacity-50";
-                            let indicatorStyle = "bg-gray-100 dark:bg-[#1e1e1e] text-gray-600 dark:text-gray-400 border border-[#333333]";
+                            let indicatorStyle = "bg-gray-100 dark:bg-[#1e1e1e] text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-[#333333]";
                             let textStyle = "text-gray-700 dark:text-gray-300";
 
                             if (isActuallyCorrect) {
@@ -355,8 +355,8 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
                         </div>
                       )}
 
-                      <div className="bg-blue-50/50 dark:bg-black border-l-4 border-blue-500 p-4 mt-6 rounded-r-md font-mono text-sm">
-                        <div className="font-mono text-xs text-blue-500 dark:text-gray-400 mb-4 flex items-center gap-2 uppercase tracking-widest">
+                      <div className="bg-blue-50 dark:bg-[#0a0a0a] border-l-4 border-blue-500 p-4 mt-6 rounded-r-md font-mono text-sm">
+                        <div className="font-mono text-xs text-blue-600 dark:text-blue-400 mb-4 flex items-center gap-2 uppercase tracking-widest">
                           {'>_ '} EXECUTION_LOG: EXPLANATION
                         </div>
                         <div className="text-sm text-gray-700 dark:text-gray-300 font-sans leading-relaxed">
@@ -402,7 +402,7 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
                       }
                       const t = questionTimes[i] || 0;
                       const widthPct = Math.round((t / maxT) * 100);
-                      const barColor = isSkipped ? '#3f3f46' : isCorrect ? '#22c55e' : '#ef4444';
+                      const barColor = isSkipped ? '#71717a' : isCorrect ? '#22c55e' : '#ef4444';
                       return (
                         <div key={i} className="flex items-center gap-4">
                           <span className="font-mono text-xs text-gray-500 w-6 shrink-0">Q{i + 1}</span>
@@ -442,7 +442,7 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
                 <div className="flex justify-center mb-10">
                   <div className="relative w-32 h-32">
                     <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#1e1e1e" strokeWidth="3" />
+                      <circle cx="18" cy="18" r="15.9" fill="none" className="text-gray-200 dark:text-[#262626]" stroke="currentColor" strokeWidth="3" />
                       <circle
                         cx="18" cy="18" r="15.9" fill="none"
                         stroke={stats.accuracy >= 80 ? '#6366f1' : stats.accuracy >= 50 ? '#f59e0b' : '#ef4444'}
@@ -460,38 +460,38 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-                  <div className="bg-[#fafafa] dark:bg-[#0a0a0a] p-6 rounded-md border border-gray-200 dark:border-[#262626] flex flex-col items-center">
+                  <div className="bg-white dark:bg-[#0a0a0a] p-6 rounded-xl border border-gray-200 dark:border-[#262626] flex flex-col items-center shadow-sm">
                     <div className="text-gray-500 font-mono text-xs uppercase mb-3 flex items-center gap-2"><Target size={14} /> Score</div>
-                    <div className="text-3xl font-bold text-gray-900 dark:text-white">{stats.score} <span className="text-sm text-gray-500 font-mono font-normal">/ {stats.maxScore}</span></div>
+                    <div className="text-3xl font-bold text-gray-900 dark:text-white">{stats.score} <span className="text-sm text-gray-400 font-mono font-normal">/ {stats.maxScore}</span></div>
                   </div>
-                  <div className="bg-[#fafafa] dark:bg-[#0a0a0a] p-6 rounded-md border border-gray-200 dark:border-[#262626] flex flex-col items-center">
+                  <div className="bg-white dark:bg-[#0a0a0a] p-6 rounded-xl border border-gray-200 dark:border-[#262626] flex flex-col items-center shadow-sm">
                     <div className="text-gray-500 font-mono text-xs uppercase mb-3 flex items-center gap-2"><BarChart3 size={14} /> Accuracy</div>
-                    <div className={`text-3xl font-bold ${stats.accuracy >= 80 ? 'text-indigo-400' : stats.accuracy >= 50 ? 'text-amber-400' : 'text-red-400'}`}>{stats.accuracy}%</div>
+                    <div className={`text-3xl font-bold ${stats.accuracy >= 80 ? 'text-indigo-500 dark:text-indigo-400' : stats.accuracy >= 50 ? 'text-amber-500 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>{stats.accuracy}%</div>
                   </div>
-                  <div className="bg-[#fafafa] dark:bg-[#0a0a0a] p-6 rounded-md border border-gray-200 dark:border-[#262626] flex flex-col items-center">
+                  <div className="bg-white dark:bg-[#0a0a0a] p-6 rounded-xl border border-gray-200 dark:border-[#262626] flex flex-col items-center shadow-sm">
                     <div className="text-gray-500 font-mono text-xs uppercase mb-3 flex items-center gap-2"><Clock size={14} /> Total Time</div>
                     <div className="text-3xl font-bold text-gray-900 dark:text-white">{formatTime(stats.totalTime)}</div>
                   </div>
-                  <div className="bg-[#fafafa] dark:bg-[#0a0a0a] p-6 rounded-md border border-gray-200 dark:border-[#262626] flex flex-col items-center">
+                  <div className="bg-white dark:bg-[#0a0a0a] p-6 rounded-xl border border-gray-200 dark:border-[#262626] flex flex-col items-center shadow-sm">
                     <div className="text-gray-500 font-mono text-xs uppercase mb-3 flex items-center gap-2"><Zap size={14} /> Avg Time</div>
                     <div className="text-3xl font-bold text-gray-900 dark:text-white">{formatTime(Math.round(stats.totalTime / quizData.length))}</div>
                   </div>
                 </div>
 
-                <div className="flex justify-center gap-8 mb-12 text-sm font-mono text-gray-600 dark:text-gray-400">
-                  <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-cyan-400"></span><span className="text-gray-900 dark:text-white">{stats.correct}</span> Passed</div>
+                <div className="flex justify-center gap-8 mb-12 text-sm font-mono text-gray-500">
+                  <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-indigo-500"></span><span className="text-gray-900 dark:text-white">{stats.correct}</span> Passed</div>
                   <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-red-500"></span><span className="text-gray-900 dark:text-white">{stats.incorrect}</span> Failed</div>
-                  <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-[#404040]"></span><span className="text-gray-900 dark:text-white">{stats.skipped}</span> Ignored</div>
+                  <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-gray-400 dark:bg-[#404040]"></span><span className="text-gray-900 dark:text-white">{stats.skipped}</span> Ignored</div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
-                  <button onClick={() => setShowAnalytics(true)} className="px-8 py-3 bg-[#fafafa] dark:bg-[#0a0a0a] border border-indigo-500/30 text-indigo-300 rounded-md font-mono text-sm hover:border-indigo-500/60 hover:text-indigo-200 transition-colors flex items-center justify-center gap-2">
+                  <button onClick={() => setShowAnalytics(true)} className="px-8 py-3 bg-white dark:bg-[#0a0a0a] border border-indigo-400/40 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-300 rounded-xl font-mono text-sm hover:border-indigo-500/60 hover:bg-indigo-50 dark:hover:text-indigo-200 dark:hover:border-indigo-500/60 transition-colors flex items-center justify-center gap-2 shadow-sm">
                     <TrendingUp size={14} /> Question Analytics
                   </button>
-                  <button onClick={() => setIsReviewMode(true)} className="px-8 py-3 bg-[#fafafa] dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#262626] text-gray-700 dark:text-gray-300 rounded-md font-mono text-sm hover:border-gray-300 dark:border-[#404040] hover:text-gray-900 dark:text-white transition-colors">
+                  <button onClick={() => setIsReviewMode(true)} className="px-8 py-3 bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#262626] text-gray-700 dark:text-gray-300 rounded-xl font-mono text-sm hover:border-gray-400 dark:hover:border-[#404040] hover:text-gray-900 dark:hover:text-white transition-colors shadow-sm">
                     View Trace Logs
                   </button>
-                  <button onClick={() => { setQuizData(null); if (isFullscreen) toggleFullscreen(); setIsReviewMode(false); setShowAnalytics(false); }} className="px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-md font-bold text-sm hover:bg-gray-200 transition-colors">
+                  <button onClick={() => { setQuizData(null); if (isFullscreen) toggleFullscreen(); setIsReviewMode(false); setShowAnalytics(false); }} className="px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-bold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors shadow-sm">
                     Initialize New Run
                   </button>
                 </div>
@@ -564,8 +564,8 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
                   const isSubmitted = submittedAnswers[currentMcqIndex];
                   const isCorrect = (quizData[currentMcqIndex].correct_indices || []).includes(i);
 
-                  let btnStyle = "bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#262626] hover:border-gray-500 hover:bg-gray-100 dark:bg-[#1a1a1a]";
-                  let indicatorStyle = "bg-gray-100 dark:bg-[#1e1e1e] text-gray-600 dark:text-gray-400 border border-[#333333]";
+                  let btnStyle = "bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#262626] hover:border-gray-400 dark:hover:border-[#555] hover:bg-gray-50 dark:hover:bg-[#1a1a1a]";
+                  let indicatorStyle = "bg-gray-100 dark:bg-[#1e1e1e] text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-[#333333]";
                   let textStyle = "text-gray-700 dark:text-gray-300";
 
                   if (!isSubmitted && isSelected) {
@@ -617,11 +617,11 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
 
               return (
                 <div className="flex gap-4 mb-8">
-                  <button onClick={() => setSelectedOptions({ ...selectedOptions, [currentMcqIndex]: [] })} disabled={submittedAnswers[currentMcqIndex]} className="flex-1 bg-gray-50 dark:bg-[#171717] border border-gray-200 dark:border-[#262626] text-gray-600 dark:text-gray-400 py-3 rounded-md font-mono text-xs md:text-sm flex items-center justify-center gap-2 hover:bg-[#262626] hover:text-gray-900 dark:text-white disabled:opacity-50 transition-colors"><RotateCcw size={14} /> Clear</button>
+                  <button onClick={() => setSelectedOptions({ ...selectedOptions, [currentMcqIndex]: [] })} disabled={submittedAnswers[currentMcqIndex]} className="flex-1 bg-gray-50 dark:bg-[#171717] border border-gray-200 dark:border-[#262626] text-gray-600 dark:text-gray-400 py-3 rounded-xl font-mono text-xs md:text-sm flex items-center justify-center gap-2 hover:bg-gray-100 dark:hover:bg-[#1a1a1a] hover:text-gray-900 dark:hover:text-white disabled:opacity-50 transition-colors"><RotateCcw size={14} /> Clear</button>
                   <button
                     onClick={() => setSubmittedAnswers({ ...submittedAnswers, [currentMcqIndex]: true })}
                     disabled={submittedAnswers[currentMcqIndex] || isAnswerEmpty}
-                    className={`flex-[2] py-3 rounded-md font-bold text-sm transition-all duration-300 ${submittedAnswers[currentMcqIndex] || isAnswerEmpty ? 'bg-gray-50 dark:bg-[#171717] border border-gray-200 dark:border-[#262626] text-gray-600 cursor-not-allowed' : 'bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-gray-200'}`}
+                    className={`flex-[2] py-3 rounded-xl font-bold text-sm transition-all duration-300 ${submittedAnswers[currentMcqIndex] || isAnswerEmpty ? 'bg-gray-100 dark:bg-[#171717] border border-gray-200 dark:border-[#262626] text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100 shadow-sm'}`}
                   >
                     Assert Answer
                   </button>
@@ -630,8 +630,8 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
             })()}
 
             {submittedAnswers[currentMcqIndex] && (
-              <div className="bg-blue-50/50 dark:bg-black border-l-4 border-blue-500 p-4 mt-6 rounded-r-md font-mono text-sm mb-8 animate-in slide-in-from-top-4 duration-300">
-                <div className="font-mono text-xs text-blue-500 dark:text-gray-400 mb-4 flex items-center gap-2 uppercase tracking-widest">
+              <div className="bg-blue-50 dark:bg-[#0a0a0a] border-l-4 border-blue-500 p-4 mt-6 rounded-r-md font-mono text-sm mb-8 animate-in slide-in-from-top-4 duration-300">
+                <div className="font-mono text-xs text-blue-600 dark:text-blue-400 mb-4 flex items-center gap-2 uppercase tracking-widest">
                   {'>_ '} EXECUTION_LOG: EXPLANATION
                 </div>
                 <div className="text-sm text-gray-700 dark:text-gray-300 font-sans leading-relaxed">
@@ -641,13 +641,13 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
             )}
 
             <div className="flex justify-between items-center border-t border-gray-200 dark:border-[#262626] pt-6 font-mono">
-              <button onClick={() => setCurrentMcqIndex(Math.max(0, currentMcqIndex - 1))} className="px-5 py-2.5 bg-transparent border border-gray-200 dark:border-[#262626] text-gray-600 dark:text-gray-400 rounded-md text-xs disabled:opacity-30 hover:bg-gray-50 dark:bg-[#171717] hover:text-gray-900 dark:text-white hover:border-gray-300 dark:border-[#404040] transition-colors" disabled={currentMcqIndex === 0}>&lt; Prev</button>
+              <button onClick={() => setCurrentMcqIndex(Math.max(0, currentMcqIndex - 1))} className="px-5 py-2.5 bg-transparent border border-gray-200 dark:border-[#262626] text-gray-600 dark:text-gray-400 rounded-xl text-xs disabled:opacity-30 hover:bg-gray-100 dark:hover:bg-[#171717] hover:text-gray-900 dark:hover:text-white hover:border-gray-400 dark:hover:border-[#404040] transition-colors" disabled={currentMcqIndex === 0}>&lt; Prev</button>
               <button
                 onClick={() => {
                   if (currentMcqIndex === quizData.length - 1) handleQuizFinish();
                   else setCurrentMcqIndex(currentMcqIndex + 1);
                 }}
-                className={`px-6 py-2.5 rounded-md font-bold text-xs transition-all ${currentMcqIndex === quizData.length - 1 ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-gray-900 dark:bg-[#262626] text-white hover:bg-gray-800 dark:hover:bg-[#404040]'}`}
+                className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-all ${currentMcqIndex === quizData.length - 1 ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_16px_rgba(99,102,241,0.3)]' : 'bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100 shadow-sm'}`}
               >
                 {currentMcqIndex === quizData.length - 1 ? 'Finish Execution' : 'Next >'}
               </button>

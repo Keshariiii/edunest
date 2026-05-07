@@ -81,7 +81,7 @@ const AnalyticsPanel = ({ quizHistory, onClearHistory, onClose }) => {
           {onClose && (
             <button
               onClick={onClose}
-              className="px-4 py-1.5 rounded-lg bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#262626] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white font-mono text-xs transition-all"
+              className="px-4 py-1.5 rounded-lg bg-gray-100 dark:bg-[#111] border border-gray-200 dark:border-[#262626] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-[#1a1a1a] font-mono text-xs transition-all"
             >
               ✕ Close
             </button>
@@ -105,10 +105,10 @@ const AnalyticsPanel = ({ quizHistory, onClearHistory, onClose }) => {
               { icon: Zap,      label: 'Best Score',     value: `${stats.bestAccuracy}%`,        sub: 'personal best'  },
               { icon: Clock,    label: 'Study Time',     value: formatTime(stats.totalTime),     sub: 'total time'     },
             ].map(({ icon: Icon, label, value, sub }, i) => (
-              <motion.div key={label} {...fadeUp(i * 0.06)} className="bg-gray-50 dark:bg-[#0d0d0d] border border-gray-200 dark:border-[#1a1a1a] rounded-2xl p-5 hover:border-indigo-500/20 transition-colors">
-                <Icon size={14} className="text-indigo-400 mb-3" />
+              <motion.div key={label} {...fadeUp(i * 0.06)} className="bg-white dark:bg-[#0d0d0d] border border-gray-200 dark:border-[#1a1a1a] rounded-2xl p-5 hover:border-indigo-500/20 transition-colors shadow-sm">
+                <Icon size={14} className="text-indigo-500 dark:text-indigo-400 mb-3" />
                 <div className="text-2xl font-black text-gray-900 dark:text-white mb-1">{value}</div>
-                <div className="text-[10px] font-mono text-gray-600 uppercase tracking-widest">{sub}</div>
+                <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">{sub}</div>
               </motion.div>
             ))}
           </div>
@@ -131,7 +131,7 @@ const AnalyticsPanel = ({ quizHistory, onClearHistory, onClose }) => {
                     const y = sparkData.H - 6 - (pct / 100) * (sparkData.H - 12);
                     return (
                       <line key={pct} x1="0" y1={y.toFixed(1)} x2={sparkData.W} y2={y.toFixed(1)}
-                        stroke="#1e1e1e" strokeWidth="0.5" strokeDasharray="4 3" />
+                        stroke="currentColor" strokeOpacity="0.08" strokeWidth="0.5" strokeDasharray="4 3" />
                     );
                   })}
                   {/* Area fill */}
@@ -162,12 +162,12 @@ const AnalyticsPanel = ({ quizHistory, onClearHistory, onClose }) => {
           )}
 
           {/* History list */}
-          <motion.div {...fadeUp(0.15)} className="bg-gray-50 dark:bg-[#0d0d0d] border border-gray-200 dark:border-[#1a1a1a] rounded-2xl overflow-hidden">
+          <motion.div {...fadeUp(0.15)} className="bg-white dark:bg-[#0d0d0d] border border-gray-200 dark:border-[#1a1a1a] rounded-2xl overflow-hidden shadow-sm">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-[#1a1a1a] flex items-center justify-between">
               <span className="font-mono text-xs text-gray-500 uppercase tracking-widest">Attempt History</span>
-              <span className="font-mono text-[10px] text-gray-700">{quizHistory.length} record{quizHistory.length !== 1 ? 's' : ''}</span>
+              <span className="font-mono text-[10px] text-gray-400 dark:text-gray-600">{quizHistory.length} record{quizHistory.length !== 1 ? 's' : ''}</span>
             </div>
-            <div className="divide-y divide-[#141414] max-h-[480px] overflow-y-auto">
+            <div className="divide-y divide-gray-100 dark:divide-[#141414] max-h-[480px] overflow-y-auto">
               {quizHistory.map((attempt, i) => (
                 <motion.div
                   key={i}
@@ -180,7 +180,7 @@ const AnalyticsPanel = ({ quizHistory, onClearHistory, onClose }) => {
                   {/* Accuracy ring mini */}
                   <div className="relative w-10 h-10 shrink-0">
                     <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                      <circle cx="18" cy="18" r="14" fill="none" stroke="#1e1e1e" strokeWidth="3.5" />
+                      <circle cx="18" cy="18" r="14" fill="none" stroke="currentColor" strokeOpacity="0.1" strokeWidth="3.5" />
                       <circle
                         cx="18" cy="18" r="14" fill="none"
                         stroke={attempt.accuracy >= 80 ? '#6366f1' : attempt.accuracy >= 50 ? '#f59e0b' : '#ef4444'}
@@ -189,7 +189,7 @@ const AnalyticsPanel = ({ quizHistory, onClearHistory, onClose }) => {
                         strokeLinecap="round"
                       />
                     </svg>
-                    <span className="absolute inset-0 flex items-center justify-center font-mono text-[9px] font-bold text-gray-900 dark:text-white">
+                    <span className="absolute inset-0 flex items-center justify-center font-mono text-[9px] font-bold text-gray-700 dark:text-white">
                       {attempt.accuracy}
                     </span>
                   </div>
@@ -201,20 +201,20 @@ const AnalyticsPanel = ({ quizHistory, onClearHistory, onClose }) => {
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border font-mono text-[10px] ${badgeColor(attempt.accuracy)}`}>
                         {attempt.accuracy >= 80 ? '🏆' : attempt.accuracy >= 50 ? '📈' : '📉'} {attempt.accuracy}%
                       </span>
-                      <span className="font-mono text-[10px] text-gray-600 border border-[#222] px-1.5 py-0.5 rounded">{attempt.examType}</span>
-                      <span className="font-mono text-[10px] text-gray-600">{attempt.difficulty}</span>
+                      <span className="font-mono text-[10px] text-gray-600 dark:text-gray-500 border border-gray-300 dark:border-[#222] px-1.5 py-0.5 rounded">{attempt.examType}</span>
+                      <span className="font-mono text-[10px] text-gray-500">{attempt.difficulty}</span>
                     </div>
-                    <div className="flex items-center gap-3 font-mono text-[10px] text-gray-600 flex-wrap">
-                      <span className="text-green-500">{attempt.correct}✓</span>
+                    <div className="flex items-center gap-3 font-mono text-[10px] text-gray-500 flex-wrap">
+                      <span className="text-green-600 dark:text-green-500">{attempt.correct}✓</span>
                       <span className="text-red-500">{attempt.incorrect}✗</span>
-                      <span className="text-gray-600">{attempt.skipped} skip</span>
-                      <span>⏱ {formatTime(attempt.totalTime)}</span>
-                      <span>{attempt.numQuestions}Q</span>
+                      <span className="text-gray-400">{attempt.skipped} skip</span>
+                      <span className="text-gray-500">⏱ {formatTime(attempt.totalTime)}</span>
+                      <span className="text-gray-500">{attempt.numQuestions}Q</span>
                     </div>
                   </div>
 
                   {/* Date */}
-                  <span className="font-mono text-[10px] text-gray-700 shrink-0 text-right hidden sm:block">
+                  <span className="font-mono text-[10px] text-gray-400 dark:text-gray-600 shrink-0 text-right hidden sm:block">
                     {formatDate(attempt.date)}
                   </span>
                 </motion.div>
