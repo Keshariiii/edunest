@@ -6,10 +6,12 @@ const Navbar = ({
   toggleFullscreen, isFullscreen,
   view, setView,
   quizHistory, showAnalytics, setShowAnalytics,
-  theme, setTheme
+  theme, setTheme,
+  user, onLogout
 }) => {
   const isWorkspace = results !== null;
   const isLanding = view === 'landing';
+  const isAuth = view === 'login' || view === 'register';
 
   // ── API Health Check ─────────────────────────────────────────────────────────
   const [apiStatus, setApiStatus] = useState('checking'); // 'checking' | 'active' | 'inactive'
@@ -124,14 +126,16 @@ const Navbar = ({
         {/* Right side */}
         <div className="flex items-center gap-2 text-sm font-mono">
 
-          {/* Back Button (always visible when not on landing) */}
-          {!isLanding && (
+          {/* Back Button */}
+          {(showAnalytics || view === 'profile' || (view === 'app' && results !== null)) && (
             <button
               onClick={() => {
-                if (isWorkspace) {
-                  setResults(null); setFiles([]); setSubject(''); setView('app'); setShowAnalytics?.(false);
-                } else {
-                  setView('landing'); setShowAnalytics?.(false);
+                if (showAnalytics) {
+                  setShowAnalytics(false);
+                } else if (view === 'profile') {
+                  setView(user ? 'app' : 'landing');
+                } else if (view === 'app' && results !== null) {
+                  setResults(null); setFiles([]); setSubject(''); setView('app');
                 }
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-[#111] text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-[#262626] rounded-md hover:bg-gray-200 dark:hover:bg-[#1a1a1a] hover:text-gray-900 dark:hover:text-white transition-colors text-xs font-bold shadow-sm"
@@ -178,16 +182,28 @@ const Navbar = ({
             </button>
           )}
 
-          {/* Landing-page CTA */}
-          {isLanding && (
-            <button
-              onClick={() => setView('app')}
-              className="group flex items-center gap-2 px-3 sm:px-4 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-black rounded-lg font-bold text-xs hover:bg-gray-800 dark:hover:bg-gray-200 transition-all active:scale-95 shadow-sm"
-            >
-              <span className="hidden sm:inline">Launch App</span>
-              <span className="sm:hidden">Launch</span>
-              <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
-            </button>
+          {/* Auth/Profile Actions */}
+          {!isAuth && (
+            user ? (
+              <div className="flex items-center gap-2 ml-1">
+                <button
+                  onClick={() => setView('profile')}
+                  className="group flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-gray-900 dark:text-white font-bold text-[11px] shadow-sm hover:shadow-indigo-500/30 transition-all active:scale-95"
+                  title="View Profile"
+                >
+                  {(user.username?.[0] || 'U').toUpperCase()}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setView('login')}
+                className="group flex items-center gap-2 px-3 sm:px-4 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-black rounded-lg font-bold text-xs hover:bg-gray-800 dark:hover:bg-gray-200 transition-all active:scale-95 shadow-sm ml-1"
+              >
+                <span className="hidden sm:inline">Sign In</span>
+                <span className="sm:hidden">Login</span>
+                <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            )
           )}
 
           {/* API status pill — always visible (except on landing) */}

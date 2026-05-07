@@ -10,6 +10,8 @@ import NotesTab from './components/NotesTab';
 import FlashcardsTab from './components/FlashcardsTab';
 import QuizTab from './components/QuizTab';
 import AnalyticsPanel from './components/AnalyticsPanel';
+import AuthView from './components/AuthView';
+import UserProfile from './components/UserProfile';
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
@@ -50,8 +52,13 @@ class ErrorBoundary extends React.Component {
 
 // ─── App ─────────────────────────────────────────────────────────────────────
 export default function App() {
-  // 'landing' | 'app'
+  // 'landing' | 'app' | 'login' | 'register' | 'profile'
   const [view, setView] = useState('landing');
+
+  // Auth State
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(() => localStorage.getItem('edunest_access_token'));
+  const [authLoading, setAuthLoading] = useState(true);
 
   const [subject, setSubject] = useState('');
   const [files, setFiles] = useState([]);
@@ -70,6 +77,64 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('edunest_quiz_history') || '[]'); } catch { return []; }
   });
   const mainContainerRef = useRef(null);
+
+  // Check Auth on Load
+  useEffect(() => {
+    const checkAuth = async () => {
+      const storedToken = localStorage.getItem('edunest_access_token');
+      if (!storedToken) {
+        setAuthLoading(false);
+        return;
+      }
+      try {
+        const apiBase = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+        const res = await fetch(`${apiBase}/api/users/me`, {
+          headers: { 'Authorization': `Bearer ${storedToken}` }
+        });
+        if (res.ok) {
+          const userData = await res.json();
+          setUser(userData);
+          // If they land on the landing page, redirect directly to the workshop
+          if (window.location.pathname === '/' && view === 'landing') {
+             setView('app');
+          }
+        } else {
+          // Token invalid/expired
+          localStorage.removeItem('edunest_access_token');
+          localStorage.removeItem('edunest_refresh_token');
+          setToken(null);
+        }
+      } catch (e) {
+        console.error('Failed to check auth status:', e);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+    checkAuth();
+  }, []);
+
+  const handleAuthSuccess = (userData, accessToken) => {
+    setUser(userData);
+    setToken(accessToken);
+    setView('app');
+  };
+
+  const handleLogout = async () => {
+    const apiBase = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+    if (token) {
+      try {
+        await fetch(`${apiBase}/api/auth/logout`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      } catch (e) { console.error('Logout error:', e); }
+    }
+    localStorage.removeItem('edunest_access_token');
+    localStorage.removeItem('edunest_refresh_token');
+    setUser(null);
+    setToken(null);
+    setView('landing');
+  };
 
   // Persist quiz history to localStorage whenever it changes
   useEffect(() => {
@@ -204,6 +269,9 @@ export default function App() {
 
   // ─── Derived flags ──────────────────────────────────────────────────────────
   const isLandingView = view === 'landing';
+  const isAuthView = view === 'login' || view === 'register';
+  const isProfileView = view === 'profile';
+  const isWorkshopView = view === 'app';
   const inResults = results !== null;
 
   // ─── Render ─────────────────────────────────────────────────────────────────
@@ -253,21 +321,25 @@ export default function App() {
       `}</style>
 
       {/* Navbar — always visible, aware of fullscreen */}
-      <Navbar
-        view={view}
-        setView={setView}
-        results={results}
-        setResults={setResults}
-        setFiles={setFiles}
-        setSubject={setSubject}
-        toggleFullscreen={toggleFullscreen}
-        isFullscreen={isFullscreen}
-        quizHistory={quizHistory}
-        showAnalytics={showAnalytics}
-        setShowAnalytics={setShowAnalytics}
-        theme={theme}
-        setTheme={setTheme}
-      />
+      {!isAuthView && (
+        <Navbar
+          view={view}
+          setView={setView}
+          results={results}
+          setResults={setResults}
+          setFiles={setFiles}
+          setSubject={setSubject}
+          toggleFullscreen={toggleFullscreen}
+          isFullscreen={isFullscreen}
+          quizHistory={quizHistory}
+          showAnalytics={showAnalytics}
+          setShowAnalytics={setShowAnalytics}
+          theme={theme}
+          setTheme={setTheme}
+          user={user}
+          onLogout={handleLogout}
+        />
+      )}
 
       {/* ── MAIN CONTENT ──────────────────────────────────────────────────── */}
       <main
@@ -288,12 +360,32 @@ export default function App() {
 
         {/* ── LANDING PAGE ──────────────────────────────────────────────── */}
         {isLandingView && !inResults && !showAnalytics && (
-          <LandingPage onGetStarted={() => setView('app')} />
+          <LandingPage onGetStarted={() => {
+            if (user) setView('app');
+            else setView('login');
+          }} />
         )}
 
+        {/* ── AUTHENTICATION ────────────────────────────────────────────── */}
+        {isAuthView && !authLoading && (
+          <AuthView onAuthSuccess={handleAuthSuccess} initialMode={view === 'login' ? 'login' : 'register'} />
+        )}
+
+        {/* ── USER PROFILE ──────────────────────────────────────────────── */}
+        {isProfileView && (
+          <div className="mx-auto w-full max-w-4xl px-6 pt-24 pb-20">
+            <UserProfile 
+              user={user} 
+              token={token} 
+              onLogout={handleLogout} 
+              onUserUpdate={(updatedUser) => setUser(updatedUser)} 
+              onBack={() => setView('app')}
+            />
+          </div>
+        )}
 
         {/* ── WORKSPACE (Upload Tool) ───────────────────────────────────── */}
-        {!isLandingView && !inResults && !isFullscreen && !showAnalytics && (
+        {isWorkshopView && !inResults && !isFullscreen && !showAnalytics && (
           <div className="mx-auto w-full max-w-7xl px-6 pt-24 pb-20">
             <HeroSection
               subject={subject}

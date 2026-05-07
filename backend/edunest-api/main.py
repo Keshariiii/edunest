@@ -37,6 +37,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Database initialization ─────────────────────────────────────────────────────
+from database import engine, Base
+from models import User, PasswordResetToken, RefreshToken, FailedLoginAttempt
+Base.metadata.create_all(bind=engine)
+
+# ── Auth routes ─────────────────────────────────────────────────────────────────
+from auth_routes import router as auth_router, user_router
+app.include_router(auth_router)
+app.include_router(user_router)
+
 # Fix Swagger UI file upload: patch openapi schema to use format: binary
 from fastapi.openapi.utils import get_openapi
 
@@ -61,6 +71,16 @@ def custom_openapi():
     return app.openapi_schema
 
 app.openapi = custom_openapi
+
+from fastapi.responses import JSONResponse
+from fastapi import Request
+import traceback
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "traceback": traceback.format_exc()}
+    )
 
 # ─────────────────────────────────────────────────────────────────────────────
 # GET /api/health — lightweight ping for frontend status indicator
