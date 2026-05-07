@@ -346,11 +346,24 @@ async def generate_quiz(
     num_questions: int = Form(default=10),
 ):
     try:
-        # Encode files once
+        # Encode files once, extracting text for office formats if needed
         file_parts = []
         for file in files:
             file_data = await file.read()
-            file_parts.append(encode_file(file_data, file.content_type))
+            fname = (file.filename or "").lower()
+            ct = file.content_type or ""
+            if fname.endswith(".docx") or ct == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                if not DOCX_AVAILABLE:
+                    raise HTTPException(status_code=400, detail="python-docx not installed on server.")
+                extracted = extract_text_from_docx(file_data)
+                file_parts.append({"text": f"[DOCUMENT CONTENT]:\n{extracted}"})
+            elif fname.endswith(".pptx") or ct == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+                if not PPTX_AVAILABLE:
+                    raise HTTPException(status_code=400, detail="python-pptx not installed on server.")
+                extracted = extract_text_from_pptx(file_data)
+                file_parts.append({"text": f"[SLIDE CONTENT]:\n{extracted}"})
+            else:
+                file_parts.append(encode_file(file_data, ct or "application/octet-stream"))
 
         batch_size = 3
         all_mcqs: List[dict[str, Any]] = []

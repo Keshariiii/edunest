@@ -320,7 +320,7 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
                         </div>
                       ) : (
                         <div className="flex flex-col gap-3 mb-8">
-                          {q.options.map((opt, optIdx) => {
+                          {(q.options || []).map((opt, optIdx) => {
                             const isUserSelected = userOpts.includes(optIdx);
                             const isActuallyCorrect = (q.correct_indices || []).includes(optIdx);
 
@@ -522,7 +522,7 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
 
           <div className="p-8 md:p-12">
             <div className="text-lg md:text-xl font-sans text-gray-800 dark:text-gray-200 mb-10 leading-relaxed max-w-3xl">
-              <MathText content={quizData[currentMcqIndex].question} />
+              <MathText content={quizData[currentMcqIndex]?.question || "Missing question content"} />
             </div>
 
             {quizData[currentMcqIndex].type === 'numerical' ? (
@@ -559,7 +559,7 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-3 mb-10">
-                {quizData[currentMcqIndex].options.map((opt, i) => {
+                {(quizData[currentMcqIndex]?.options || []).map((opt, i) => {
                   const isSelected = (selectedOptions[currentMcqIndex] || []).includes(i);
                   const isSubmitted = submittedAnswers[currentMcqIndex];
                   const isCorrect = (quizData[currentMcqIndex].correct_indices || []).includes(i);
@@ -635,7 +635,7 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
                   {'>_ '} EXECUTION_LOG: EXPLANATION
                 </div>
                 <div className="text-sm text-gray-700 dark:text-gray-300 font-sans leading-relaxed">
-                  <MathText content={quizData[currentMcqIndex].explanation} />
+                  <MathText content={quizData[currentMcqIndex]?.explanation || "No explanation provided."} />
                 </div>
               </div>
             )}
