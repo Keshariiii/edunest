@@ -3,9 +3,17 @@ import { Settings, XCircle, BrainCircuit, Timer, RotateCcw, Maximize, Minimize, 
 import MathText from './MathText';
 import confetti from 'canvas-confetti';
 
-const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainerRef, onQuizComplete }) => {
+const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainerRef, onQuizComplete, isOffline = false }) => {
   const [quizConfig, setQuizConfig] = useState({ examType: 'JEE Main', difficulty: 'Medium', numQuestions: 10 });
-  const [quizData, setQuizData] = useState(null);
+  const [quizData, setQuizData] = useState(() => {
+    try {
+      const cached = localStorage.getItem('edunest_cached_quiz');
+      return cached ? JSON.parse(cached) : null;
+    } catch { return null; }
+  });
+  const [isCachedQuiz, setIsCachedQuiz] = useState(() => {
+    try { return !!localStorage.getItem('edunest_cached_quiz'); } catch { return false; }
+  });
   const [isQuizGenerating, setIsQuizGenerating] = useState(false);
   const [quizLoadingStatus, setQuizLoadingStatus] = useState('> Fetching syllabus parameters...');
   const [quizErrorMsg, setQuizErrorMsg] = useState('');
@@ -62,6 +70,9 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
         setQuizLoadingStatus("Compilation Complete");
         setTimeout(() => {
           setQuizData(finalData);
+          setIsCachedQuiz(false);
+          // Persist quiz for offline access
+          try { localStorage.setItem('edunest_cached_quiz', JSON.stringify(finalData)); } catch {}
           setSubmittedAnswers({}); setSelectedOptions({}); setQuestionTimes({}); setIsQuizFinished(false); setCurrentMcqIndex(0);
           setIsReviewMode(false);
           setIsQuizGenerating(false);
@@ -261,9 +272,49 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
 
           </div>
 
-          <button onClick={handleGenerateQuiz} disabled={isQuizGenerating} className="w-full bg-gray-900 dark:bg-white text-white dark:text-black py-4 rounded-xl font-bold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 transition-all shadow-sm">
-            {isQuizGenerating ? <span className="font-mono">{quizLoadingStatus}</span> : "Execute Test Run"}
+          {/* Offline notice when no cached quiz is available */}
+          {isOffline && !quizData && (
+            <div className="mb-6 p-4 rounded-xl bg-red-500/8 border border-red-500/20 flex items-start gap-3">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-red-400 shrink-0 mt-0.5">
+                <path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0119 12.55M5 12.55a10.94 10.94 0 015.17-2.39M10.71 5.05A16 16 0 0122.58 9M1.42 9a15.91 15.91 0 014.7-2.88M8.53 16.11a6 6 0 016.95 0M12 20h.01" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <div>
+                <p className="text-red-400 font-semibold text-xs">Offline — Quiz generation unavailable</p>
+                <p className="text-gray-500 text-xs mt-0.5">Connect to the internet to generate a new quiz. No cached quiz found.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Offline notice with cached quiz available */}
+          {isOffline && quizData && isCachedQuiz && (
+            <div className="mb-6 p-4 rounded-xl bg-amber-500/8 border border-amber-500/20 flex items-start gap-3">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-amber-400 shrink-0 mt-0.5">
+                <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <p className="text-amber-400 font-semibold text-xs">Offline — Showing cached quiz</p>
+                <p className="text-gray-500 text-xs mt-0.5">You can review your last quiz. Connect to generate a new one.</p>
+              </div>
+            </div>
+          )}
+
+          <button onClick={handleGenerateQuiz} disabled={isQuizGenerating || isOffline} className={`w-full py-4 rounded-xl font-bold text-sm transition-all shadow-sm ${
+            isOffline
+              ? 'bg-gray-200 dark:bg-[#1a1a1a] text-gray-400 dark:text-gray-600 cursor-not-allowed'
+              : 'bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50'
+          }`}>
+            {isQuizGenerating ? <span className="font-mono">{quizLoadingStatus}</span> : isOffline ? 'Offline — Cannot Generate' : 'Execute Test Run'}
           </button>
+
+          {/* Show cached quiz button when offline + cache exists */}
+          {isOffline && isCachedQuiz && quizData && (
+            <button
+              onClick={() => { setSubmittedAnswers({}); setSelectedOptions({}); setQuestionTimes({}); setIsQuizFinished(false); setCurrentMcqIndex(0); setIsReviewMode(false); }}
+              className="w-full mt-3 py-3 rounded-xl font-bold text-sm bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] text-gray-700 dark:text-gray-300 hover:border-indigo-400/50 hover:text-indigo-600 dark:hover:text-indigo-300 transition-all"
+            >
+              Review Cached Quiz
+            </button>
+          )}
         </div>
       ) : quizData.length === 0 ? (
         <div className="bg-white dark:bg-[#121212] p-10 md:p-16 border border-gray-200 dark:border-[#262626] rounded-xl text-center">

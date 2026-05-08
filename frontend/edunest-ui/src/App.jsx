@@ -12,6 +12,7 @@ import QuizTab from './components/QuizTab';
 import AnalyticsPanel from './components/AnalyticsPanel';
 import AuthView from './components/AuthView';
 import UserProfile from './components/UserProfile';
+import OfflinePage from './components/OfflinePage';
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
@@ -83,59 +84,66 @@ export default function App() {
 
   // Global Network Status
   useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
+    const handleOnline = () => {
+      setIsOffline(false);
+      setShowBackOnline(true);
+      setTimeout(() => setShowBackOnline(false), 3500);
+      // Feature 12: auto-retry session check + clear stale errors on reconnect
+      setUploadError(null);
+      if (view === 'landing' || view === 'loading') {
+        checkAuth();
+      }
+    };
+    const handleOffline = () => {
+      setIsOffline(true);
+      setShowBackOnline(false);
+    };
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [view]);
 
   // Check Auth on Load — determines initial view
-  useEffect(() => {
-    const checkAuth = async () => {
-      const storedToken = localStorage.getItem('edunest_access_token');
-      if (!storedToken) {
-        // No token → show landing page
-        setView('landing');
-        setAuthLoading(false);
-        return;
-      }
+  // Extracted so it can also be called on reconnect
+  const checkAuth = async () => {
+    const storedToken = localStorage.getItem('edunest_access_token');
+    if (!storedToken) {
+      setView('landing');
+      setAuthLoading(false);
+      return;
+    }
 
-      // Show slow-network banner if the check takes > 8 seconds
-      const slowTimer = setTimeout(() => setSlowNetwork(true), 8000);
+    const slowTimer = setTimeout(() => setSlowNetwork(true), 8000);
 
-      try {
-        const apiBase = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-        const res = await fetch(`${apiBase}/api/users/me`, {
-          headers: { 'Authorization': `Bearer ${storedToken}` }
-        });
-        if (res.ok) {
-          const userData = await res.json();
-          setUser(userData);
-          // Valid token → go straight to workshop
-          setView('app');
-        } else {
-          // Token invalid/expired → clear it and show landing
-          localStorage.removeItem('edunest_access_token');
-          localStorage.removeItem('edunest_refresh_token');
-          setToken(null);
-          setView('landing');
-        }
-      } catch (e) {
-        console.error('Failed to check auth status:', e);
-        // Network error → fall back to landing
+    try {
+      const apiBase = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      const res = await fetch(`${apiBase}/api/users/me`, {
+        headers: { 'Authorization': `Bearer ${storedToken}` }
+      });
+      if (res.ok) {
+        const userData = await res.json();
+        setUser(userData);
+        setView('app');
+      } else {
+        localStorage.removeItem('edunest_access_token');
+        localStorage.removeItem('edunest_refresh_token');
+        setToken(null);
         setView('landing');
-      } finally {
-        clearTimeout(slowTimer);
-        setSlowNetwork(false);
-        setAuthLoading(false);
       }
-    };
-    checkAuth();
-  }, []);
+    } catch (e) {
+      console.error('Failed to check auth status:', e);
+      setView('landing');
+    } finally {
+      clearTimeout(slowTimer);
+      setSlowNetwork(false);
+      setAuthLoading(false);
+    }
+  };
+
+  useEffect(() => { checkAuth(); }, []);
 
   const handleAuthSuccess = (userData, accessToken) => {
     setUser(userData);
@@ -281,7 +289,7 @@ export default function App() {
       setResults(prev => ({
         ...prev,
         ...(sectionType === 'formulas' ? { formulas: data.data } : {}),
-        ...(sectionType === 'notes'    ? { short_notes: data.data } : {}),
+        ...(sectionType === 'notes' ? { short_notes: data.data } : {}),
         ...(sectionType === 'flashcards' ? { flashcards: data.data } : {}),
       }));
     } catch (e) {
@@ -393,17 +401,19 @@ export default function App() {
 
         {/* ── LANDING PAGE ──────────────────────────────────────────────── */}
         {isLandingView && !inResults && !showAnalytics && (
-          <LandingPage onGetStarted={() => {
-            if (user) setView('app');
-            else setView('login');
-          }} />
+          isOffline
+            ? <OfflinePage onRetry={() => window.location.reload()} />
+            : <LandingPage onGetStarted={() => {
+                if (user) setView('app');
+                else setView('login');
+              }} />
         )}
 
         {/* ── AUTHENTICATION ────────────────────────────────────────────── */}
         {isAuthView && !authLoading && (
-          <AuthView 
-            onAuthSuccess={handleAuthSuccess} 
-            initialMode={view === 'login' ? 'login' : 'register'} 
+          <AuthView
+            onAuthSuccess={handleAuthSuccess}
+            initialMode={view === 'login' ? 'login' : 'register'}
             onBack={() => setView('landing')}
           />
         )}
@@ -411,11 +421,11 @@ export default function App() {
         {/* ── USER PROFILE ──────────────────────────────────────────────── */}
         {isProfileView && (
           <div className="mx-auto w-full max-w-4xl px-6 pt-24 pb-20">
-            <UserProfile 
-              user={user} 
-              token={token} 
-              onLogout={handleLogout} 
-              onUserUpdate={(updatedUser) => setUser(updatedUser)} 
+            <UserProfile
+              user={user}
+              token={token}
+              onLogout={handleLogout}
+              onUserUpdate={(updatedUser) => setUser(updatedUser)}
               onBack={() => setView('app')}
             />
           </div>
@@ -494,20 +504,19 @@ export default function App() {
                 {!isFullscreen && !showAnalytics && (
                   <div className="no-print flex gap-1 overflow-x-auto pb-4 mb-6 md:mb-8 border-b border-gray-200 dark:border-[#262626] no-scrollbar relative w-full items-center snap-x snap-mandatory scroll-smooth">
                     <div className="absolute left-0 bottom-4 w-full h-[1px] bg-gray-200 dark:bg-[#262626]" />
-                  {[
-                      { id: 'formulas',   icon: <Calculator size={14} />, label: 'formulas' },
-                      { id: 'notes',      icon: <FileText size={14} />,   label: 'notes' },
-                      { id: 'flashcards', icon: <Layers size={14} />,     label: 'flashcards' },
-                      { id: 'quiz',       icon: <BrainCircuit size={14} />, label: 'quiz' },
+                    {[
+                      { id: 'formulas', icon: <Calculator size={14} />, label: 'formulas' },
+                      { id: 'notes', icon: <FileText size={14} />, label: 'notes' },
+                      { id: 'flashcards', icon: <Layers size={14} />, label: 'flashcards' },
+                      { id: 'quiz', icon: <BrainCircuit size={14} />, label: 'quiz' },
                     ].map(tab => (
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`px-4 md:px-5 py-2.5 font-mono text-xs md:text-sm flex items-center gap-2 capitalize transition-all duration-300 whitespace-nowrap relative z-10 snap-start ${
-                          activeTab === tab.id
+                        className={`px-4 md:px-5 py-2.5 font-mono text-xs md:text-sm flex items-center gap-2 capitalize transition-all duration-300 whitespace-nowrap relative z-10 snap-start ${activeTab === tab.id
                             ? 'text-gray-900 dark:text-white bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#262626] border-b-transparent rounded-t-lg shadow-sm'
                             : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white bg-transparent border border-transparent hover:bg-gray-100 dark:hover:bg-[#121212]/50'
-                        }`}
+                          }`}
                       >
                         {tab.icon} {tab.label}.md
                       </button>
@@ -529,10 +538,10 @@ export default function App() {
                   </div>
                 )}
 
-                {!showAnalytics && activeTab === 'formulas'   && <FormulasTab   formulas={results.formulas}     loading={regeneratingSection === 'formulas'} />}
-                {!showAnalytics && activeTab === 'notes'      && <NotesTab      notes={results.short_notes}     loading={regeneratingSection === 'notes'} />}
+                {!showAnalytics && activeTab === 'formulas' && <FormulasTab formulas={results.formulas} loading={regeneratingSection === 'formulas'} />}
+                {!showAnalytics && activeTab === 'notes' && <NotesTab notes={results.short_notes} loading={regeneratingSection === 'notes'} />}
                 {!showAnalytics && activeTab === 'flashcards' && <FlashcardsTab flashcards={results.flashcards} loading={regeneratingSection === 'flashcards'} />}
-                {!showAnalytics && activeTab === 'quiz'       && (
+                {!showAnalytics && activeTab === 'quiz' && (
                   <QuizTab
                     files={files}
                     subject={subject}
@@ -540,6 +549,7 @@ export default function App() {
                     toggleFullscreen={toggleFullscreen}
                     mainContainerRef={mainContainerRef}
                     onQuizComplete={handleQuizComplete}
+                    isOffline={isOffline}
                   />
                 )}
               </div>
