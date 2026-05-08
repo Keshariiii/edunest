@@ -23,9 +23,17 @@ const FlashcardsTab = ({ flashcards, loading = false }) => {
             isFlipped={isFlashcardFlipped}
             setIsFlipped={setIsFlashcardFlipped}
           />
-          <div className="flex gap-2 mt-8 w-full justify-center px-4 font-mono">
-            <button onClick={() => { setIsFlashcardFlipped(false); setFlashcardDirection('prev'); setCurrentFlashcardIndex(Math.max(0, currentFlashcardIndex - 1)); }} disabled={currentFlashcardIndex === 0} className="px-5 py-2.5 bg-white dark:bg-[#121212] text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-[#262626] rounded-md text-xs hover:text-gray-900 dark:text-white hover:border-gray-300 dark:border-[#404040] disabled:opacity-30 transition-all">Prev</button>
-            <button onClick={() => { setIsFlashcardFlipped(false); setFlashcardDirection('next'); setCurrentFlashcardIndex(Math.min((flashcards.length || 1) - 1, currentFlashcardIndex + 1)); }} disabled={currentFlashcardIndex === (flashcards.length || 1) - 1} className="px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-black rounded-md font-bold text-xs hover:bg-gray-200 disabled:opacity-30 transition-all w-24">Next</button>
+          <div className="flex gap-2 mt-8 w-full justify-center px-4 font-mono pb-safe">
+            <button
+              onClick={() => { setIsFlashcardFlipped(false); setFlashcardDirection('prev'); setCurrentFlashcardIndex(Math.max(0, currentFlashcardIndex - 1)); }}
+              disabled={currentFlashcardIndex === 0}
+              className="flex-1 max-w-[140px] min-h-[44px] px-5 py-2.5 bg-white dark:bg-[#121212] text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-[#262626] rounded-md text-xs hover:text-gray-900 dark:text-white hover:border-gray-300 dark:border-[#404040] disabled:opacity-30 transition-all touch-manipulation"
+            >← Prev</button>
+            <button
+              onClick={() => { setIsFlashcardFlipped(false); setFlashcardDirection('next'); setCurrentFlashcardIndex(Math.min((flashcards.length || 1) - 1, currentFlashcardIndex + 1)); }}
+              disabled={currentFlashcardIndex === (flashcards.length || 1) - 1}
+              className="flex-1 max-w-[140px] min-h-[44px] px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-black rounded-md font-bold text-xs hover:bg-gray-800 disabled:opacity-30 transition-all touch-manipulation"
+            >Next →</button>
           </div>
         </>
       ) : (

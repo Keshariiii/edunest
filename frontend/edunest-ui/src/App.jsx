@@ -53,9 +53,15 @@ class ErrorBoundary extends React.Component {
 
 // ─── App ─────────────────────────────────────────────────────────────────────
 export default function App() {
-  // 'landing' | 'app' | 'login' | 'register' | 'profile'
-  // Start with 'loading' so we don't flash the landing page before auth check
-  const [view, setView] = useState('loading');
+  // Smart view initialisation — skip 'loading' flash when we already have a
+  // cached session so results are immediately visible after a reconnect/refresh.
+  const [view, setView] = useState(() => {
+    const hasToken   = !!localStorage.getItem('edunest_access_token');
+    const hasResults = !!localStorage.getItem('edunest_cached_results');
+    if (hasToken && hasResults) return 'app';  // drop straight into results
+    if (!hasToken)              return 'landing'; // no session — show landing
+    return 'loading';                            // token but no results — verify
+  });
 
   // Auth State
   const [user, setUser] = useState(null);
@@ -64,11 +70,22 @@ export default function App() {
   const [slowNetwork, setSlowNetwork] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
-  const [subject, setSubject] = useState('');
+  const [subject, setSubject] = useState(() => {
+    try { return localStorage.getItem('edunest_subject') || ''; } catch { return ''; }
+  });
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState(null);
-  const [activeTab, setActiveTab] = useState('formulas');
+  const [results, setResults] = useState(() => {
+    try {
+      const cached = localStorage.getItem('edunest_cached_results');
+      return cached ? JSON.parse(cached) : null;
+    } catch { return null; }
+  });
+  const [activeTab, setActiveTab] = useState(() => {
+    try { return localStorage.getItem('edunest_active_tab') || 'formulas'; } catch { return 'formulas'; }
+  });
+  // Track whether files are missing after a refresh (they can't be persisted)
+  const [filesLostAfterRefresh, setFilesLostAfterRefresh] = useState(false);
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem('theme') || 'dark'; } catch { return 'dark'; }
   });
@@ -88,11 +105,11 @@ export default function App() {
       setIsOffline(false);
       setShowBackOnline(true);
       setTimeout(() => setShowBackOnline(false), 3500);
-      // Feature 12: auto-retry session check + clear stale errors on reconnect
       setUploadError(null);
-      if (view === 'landing' || view === 'loading') {
-        checkAuth();
-      }
+      // NEVER redirect when results are already cached — just restore connectivity silently.
+      const hasResults = !!localStorage.getItem('edunest_cached_results');
+      if (hasResults) return;  // <- key guard: do nothing if user has materials
+      if (view === 'landing' || view === 'loading') checkAuth();
     };
     const handleOffline = () => {
       setIsOffline(true);
@@ -126,16 +143,26 @@ export default function App() {
       if (res.ok) {
         const userData = await res.json();
         setUser(userData);
-        setView('app');
+        // Only navigate if not already showing cached results
+        // This prevents a reconnect/refresh from wiping the results view
+        const hasResults = !!localStorage.getItem('edunest_cached_results');
+        if (!hasResults) setView('app');
       } else {
+        // Token truly invalid — clear everything including cached materials
         localStorage.removeItem('edunest_access_token');
         localStorage.removeItem('edunest_refresh_token');
+        localStorage.removeItem('edunest_cached_results');
+        localStorage.removeItem('edunest_subject');
+        localStorage.removeItem('edunest_active_tab');
         setToken(null);
+        setResults(null);
         setView('landing');
       }
     } catch (e) {
       console.error('Failed to check auth status:', e);
-      setView('landing');
+      // Network error during auth check — do NOT navigate away if results exist
+      const hasResults = !!localStorage.getItem('edunest_cached_results');
+      if (!hasResults) setView('landing');
     } finally {
       clearTimeout(slowTimer);
       setSlowNetwork(false);
@@ -163,8 +190,14 @@ export default function App() {
     }
     localStorage.removeItem('edunest_access_token');
     localStorage.removeItem('edunest_refresh_token');
+    localStorage.removeItem('edunest_cached_results');
+    localStorage.removeItem('edunest_subject');
+    localStorage.removeItem('edunest_active_tab');
     setUser(null);
     setToken(null);
+    setResults(null);
+    setSubject('');
+    setFiles([]);
     setView('landing');
   };
 
@@ -172,6 +205,32 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('edunest_quiz_history', JSON.stringify(quizHistory));
   }, [quizHistory]);
+
+  // Persist results, subject, and activeTab to localStorage
+  useEffect(() => {
+    if (results) {
+      try { localStorage.setItem('edunest_cached_results', JSON.stringify(results)); } catch {}
+    } else {
+      localStorage.removeItem('edunest_cached_results');
+    }
+  }, [results]);
+
+  useEffect(() => {
+    if (subject) localStorage.setItem('edunest_subject', subject);
+  }, [subject]);
+
+  useEffect(() => {
+    localStorage.setItem('edunest_active_tab', activeTab);
+  }, [activeTab]);
+
+  // Detect files lost after a refresh when results are cached but files array is empty
+  useEffect(() => {
+    if (results && files.length === 0) {
+      setFilesLostAfterRefresh(true);
+    } else {
+      setFilesLostAfterRefresh(false);
+    }
+  }, [results, files]);
 
   const handleQuizComplete = (result) => {
     setQuizHistory(prev => [result, ...prev].slice(0, 50)); // keep last 50 attempts
@@ -359,6 +418,20 @@ export default function App() {
         input[type="number"] { -moz-appearance:textfield; }
 
         @keyframes scan { 0% { left:-50%; } 100% { left:100%; } }
+
+        /* ── Mobile Utilities ─────────────────────────────────────────── */
+        /* Safe-area inset bottom for iPhone home bar */
+        .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+        /* Stop double-tap zoom on buttons without disabling pinch-to-zoom */
+        button, a, label { touch-action: manipulation; }
+        /* Overflow-protect math/code blocks on narrow screens */
+        .katex-display, pre, code { overflow-x: auto; max-width: 100%; }
+        /* Prevent text selection flash on rapid taps */
+        button { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+        /* Smooth momentum scrolling inside scroll containers on iOS */
+        .overflow-y-auto, .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+        /* Prevent pull-to-refresh in the results container on Android Chrome */
+        main { overscroll-behavior-y: contain; }
       `}</style>
 
       {/* Navbar — always visible, aware of fullscreen */}
@@ -454,7 +527,7 @@ export default function App() {
 
         {/* ── RESULTS (Study Material) ─────────────────────────────────── */}
         {inResults && (
-          <div className="mx-auto w-full max-w-7xl px-6">
+          <div className="mx-auto w-full max-w-7xl px-3 sm:px-6">
             <ErrorBoundary>
               <div className="mt-8 md:mt-10 transition-all duration-300">
 
@@ -502,7 +575,7 @@ export default function App() {
 
                 {/* Tab Bar */}
                 {!isFullscreen && !showAnalytics && (
-                  <div className="no-print flex gap-1 overflow-x-auto pb-4 mb-6 md:mb-8 border-b border-gray-200 dark:border-[#262626] no-scrollbar relative w-full items-center snap-x snap-mandatory scroll-smooth">
+                  <div className="no-print flex gap-1 overflow-x-auto pb-4 mb-6 md:mb-8 border-b border-gray-200 dark:border-[#262626] custom-scrollbar relative w-full items-center snap-x snap-mandatory scroll-smooth">
                     <div className="absolute left-0 bottom-4 w-full h-[1px] bg-gray-200 dark:bg-[#262626]" />
                     {[
                       { id: 'formulas', icon: <Calculator size={14} />, label: 'formulas' },
@@ -513,7 +586,7 @@ export default function App() {
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`px-4 md:px-5 py-2.5 font-mono text-xs md:text-sm flex items-center gap-2 capitalize transition-all duration-300 whitespace-nowrap relative z-10 snap-start ${activeTab === tab.id
+                        className={`min-h-[44px] px-4 md:px-5 py-2.5 font-mono text-xs md:text-sm flex items-center gap-2 capitalize transition-all duration-300 whitespace-nowrap relative z-10 snap-start touch-manipulation ${activeTab === tab.id
                             ? 'text-gray-900 dark:text-white bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#262626] border-b-transparent rounded-t-lg shadow-sm'
                             : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white bg-transparent border border-transparent hover:bg-gray-100 dark:hover:bg-[#121212]/50'
                           }`}
@@ -524,12 +597,26 @@ export default function App() {
                   </div>
                 )}
 
+                {/* Files-lost-after-refresh notice */}
+                {filesLostAfterRefresh && !showAnalytics && (
+                  <div className="no-print mb-4 px-4 py-3 rounded-xl bg-amber-500/8 border border-amber-500/20 flex items-start gap-3">
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-amber-400 shrink-0 mt-0.5">
+                      <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-amber-400 font-semibold text-xs">Session restored from cache</p>
+                      <p className="text-gray-500 text-xs mt-0.5">Your study materials are intact. To use Regenerate, please re-upload your original file from the workshop.</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Regenerate button for non-quiz tabs */}
                 {activeTab !== 'quiz' && !isFullscreen && !showAnalytics && (
                   <div className="no-print flex justify-end mb-3">
                     <button
                       onClick={() => handleRegenerateSection(activeTab === 'notes' ? 'notes' : activeTab)}
-                      disabled={!!regeneratingSection}
+                      disabled={!!regeneratingSection || filesLostAfterRefresh || isOffline}
+                      title={filesLostAfterRefresh ? 'Re-upload your file to regenerate' : isOffline ? 'Offline — cannot regenerate' : ''}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-400/40 dark:hover:border-indigo-500/30 font-mono text-[11px] transition-all disabled:opacity-40 shadow-sm"
                     >
                       <RefreshCw size={11} className={regeneratingSection === activeTab ? 'animate-spin text-indigo-500' : ''} />
