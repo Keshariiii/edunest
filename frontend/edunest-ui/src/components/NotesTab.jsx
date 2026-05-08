@@ -2,10 +2,13 @@ import React, { useState } from 'react';
 import { Download } from 'lucide-react';
 import MathText from './MathText';
 import { chunkArray } from '../utils/helpers';
+import { NotesSkeleton } from './SkeletonLoader';
 
-const NotesTab = ({ notes }) => {
+const NotesTab = ({ notes, loading = false }) => {
   const [currentNotePage, setCurrentNotePage] = useState(0);
   const [noteDirection, setNoteDirection] = useState('next');
+
+  if (loading) return <NotesSkeleton />;
 
   const handlePrint = () => {
     window.print();

@@ -1,6 +1,53 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Cpu, UploadCloud, Trash2, Camera, FileText } from 'lucide-react';
+
+const LOADING_STEPS = [
+  'Uploading your files…',
+  'Extracting text and figures…',
+  'AI is analysing content…',
+  'Building formulas & notes…',
+  'Almost there…',
+];
+
+const ProcessingState = () => {
+  const [stepIndex, setStepIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setStepIndex(i => (i + 1 < LOADING_STEPS.length ? i + 1 : i));
+    }, 8000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="w-full bg-gray-50 dark:bg-[#0f0f0f] border border-gray-200 dark:border-[#262626] rounded-xl p-6 flex flex-col items-center gap-4">
+      {/* Spinner */}
+      <div className="relative w-9 h-9">
+        <div className="absolute inset-0 rounded-full border-[3px] border-gray-200 dark:border-[#262626]" />
+        <div className="absolute inset-0 rounded-full border-[3px] border-indigo-500 border-t-transparent animate-spin" />
+      </div>
+
+      {/* Step label */}
+      <div className="text-center">
+        <p className="text-gray-900 dark:text-white font-semibold text-sm">{LOADING_STEPS[stepIndex]}</p>
+        <p className="text-gray-500 text-xs mt-1">This usually takes 20–60 seconds depending on file size.</p>
+      </div>
+
+      {/* Progress dots */}
+      <div className="flex gap-1.5">
+        {LOADING_STEPS.map((_, i) => (
+          <div
+            key={i}
+            className={`h-1.5 rounded-full transition-all duration-500 ${
+              i <= stepIndex ? 'bg-indigo-500 w-5' : 'bg-gray-200 dark:bg-[#2a2a2a] w-1.5'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const HeroSection = ({
   subject,
@@ -14,6 +61,7 @@ const HeroSection = ({
   uploadError,
   loading,
   handleGenerateBase,
+  isOffline = false,
 }) => {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-6 duration-500">
@@ -132,20 +180,19 @@ const HeroSection = ({
 
           {/* Submit / Loading */}
           {loading ? (
-            <div className="w-full bg-gray-50 dark:bg-[#0f0f0f] p-5 rounded-xl border border-gray-200 dark:border-[#262626] flex flex-col items-center justify-center">
-              <span className="font-mono text-[10px] text-indigo-500 dark:text-indigo-400 animate-pulse uppercase tracking-widest mb-3">Running extraction engine...</span>
-              <div className="w-full h-1.5 bg-gray-200 dark:bg-[#171717] rounded-full overflow-hidden relative">
-                <div className="absolute top-0 bottom-0 w-1/3 bg-indigo-500 animate-[scan_1.5s_ease-in-out_infinite] rounded-full shadow-[0_0_10px_rgba(99,102,241,0.6)]" />
-              </div>
-            </div>
+            <ProcessingState />
           ) : (
             <button
               onClick={handleGenerateBase}
-              disabled={loading}
-              className="w-full bg-gray-900 dark:bg-white text-white dark:text-black py-3 rounded-xl font-semibold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group shadow-sm"
+              disabled={loading || isOffline}
+              className={`w-full py-3 rounded-xl font-semibold text-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 group shadow-sm ${
+                isOffline 
+                  ? 'bg-gray-200 dark:bg-[#1a1a1a] text-gray-400 dark:text-gray-600 cursor-not-allowed' 
+                  : 'bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100'
+              }`}
             >
-              Initialize Processing
-              <span className="font-mono text-xs bg-gray-700 dark:bg-gray-200 text-gray-200 dark:text-gray-800 px-1.5 py-0.5 rounded group-hover:bg-gray-600 dark:group-hover:bg-gray-300 transition-colors">⏎</span>
+              {isOffline ? 'Offline — Check Connection' : 'Initialize Processing'}
+              {!isOffline && <span className="font-mono text-xs bg-gray-700 dark:bg-gray-200 text-gray-200 dark:text-gray-800 px-1.5 py-0.5 rounded group-hover:bg-gray-600 dark:group-hover:bg-gray-300 transition-colors">⏎</span>}
             </button>
           )}
         </div>

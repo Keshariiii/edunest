@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import Flashcard from './Flashcard';
+import { FlashcardsSkeleton } from './SkeletonLoader';
 
-const FlashcardsTab = ({ flashcards }) => {
+const FlashcardsTab = ({ flashcards, loading = false }) => {
   const [isFlashcardFlipped, setIsFlashcardFlipped] = useState(false);
   const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
   const [flashcardDirection, setFlashcardDirection] = useState('next');
+
+  if (loading) return <FlashcardsSkeleton />;
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col items-center overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">

@@ -1,6 +1,6 @@
-/* eslint-disable */
 import React, { useState, useEffect, useRef } from 'react';
 import { Calculator, FileText, Layers, Minimize, BrainCircuit, AlertTriangle, RefreshCw, BookOpen, Tag } from 'lucide-react';
+import { AppLoading, SlowNetworkBanner, OfflineBanner } from './components/SkeletonLoader';
 
 import Navbar from './components/Navbar';
 import LandingPage from './components/LandingPage';
@@ -60,6 +60,8 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem('edunest_access_token'));
   const [authLoading, setAuthLoading] = useState(true);
+  const [slowNetwork, setSlowNetwork] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   const [subject, setSubject] = useState('');
   const [files, setFiles] = useState([]);
@@ -79,6 +81,18 @@ export default function App() {
   });
   const mainContainerRef = useRef(null);
 
+  // Global Network Status
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   // Check Auth on Load — determines initial view
   useEffect(() => {
     const checkAuth = async () => {
@@ -89,6 +103,10 @@ export default function App() {
         setAuthLoading(false);
         return;
       }
+
+      // Show slow-network banner if the check takes > 8 seconds
+      const slowTimer = setTimeout(() => setSlowNetwork(true), 8000);
+
       try {
         const apiBase = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
         const res = await fetch(`${apiBase}/api/users/me`, {
@@ -111,6 +129,8 @@ export default function App() {
         // Network error → fall back to landing
         setView('landing');
       } finally {
+        clearTimeout(slowTimer);
+        setSlowNetwork(false);
         setAuthLoading(false);
       }
     };
@@ -282,6 +302,15 @@ export default function App() {
   return (
     <div className={`flex flex-col bg-[#fafafa] dark:bg-[#0a0a0a] text-gray-800 dark:text-gray-100 font-sans selection:bg-indigo-500/30 transition-colors duration-300 ease-in-out ${(inResults || isFullscreen) ? 'h-screen overflow-hidden print:h-auto print:overflow-visible' : 'min-h-screen'}`}>
 
+      {/* ── FULL-SCREEN AUTH LOADING (token check in progress) ─────────── */}
+      {view === 'loading' && <AppLoading message="Restoring your workspace" detail="Verifying your session…" />}
+
+      {/* ── SLOW NETWORK BANNER ──────────────────────────────────────────── */}
+      {slowNetwork && !isOffline && <SlowNetworkBanner onRetry={() => window.location.reload()} />}
+
+      {/* ── OFFLINE BANNER ──────────────────────────────────────────────── */}
+      {isOffline && <OfflineBanner />}
+
       {/* Fixed background decorations */}
       <div className="fixed inset-0 z-0 pointer-events-none no-print">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000005_1px,transparent_1px),linear-gradient(to_bottom,#00000005_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:40px_40px]" />
@@ -362,14 +391,6 @@ export default function App() {
           </div>
         )}
 
-        {/* ── INITIAL LOADING (auth check in progress) ───────────────── */}
-        {view === 'loading' && (
-          <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-            <div className="w-8 h-8 rounded-full border-2 border-indigo-500/30 border-t-indigo-500 animate-spin" />
-            <p className="text-gray-400 font-mono text-xs tracking-widest">Restoring session…</p>
-          </div>
-        )}
-
         {/* ── LANDING PAGE ──────────────────────────────────────────────── */}
         {isLandingView && !inResults && !showAnalytics && (
           <LandingPage onGetStarted={() => {
@@ -416,6 +437,7 @@ export default function App() {
               loading={loading}
               handleGenerateBase={handleGenerateBase}
               onBack={() => setView('landing')}
+              isOffline={isOffline}
             />
           </div>
         )}
@@ -507,9 +529,9 @@ export default function App() {
                   </div>
                 )}
 
-                {!showAnalytics && activeTab === 'formulas'   && <FormulasTab   formulas={results.formulas} />}
-                {!showAnalytics && activeTab === 'notes'      && <NotesTab      notes={results.short_notes} />}
-                {!showAnalytics && activeTab === 'flashcards' && <FlashcardsTab flashcards={results.flashcards} />}
+                {!showAnalytics && activeTab === 'formulas'   && <FormulasTab   formulas={results.formulas}     loading={regeneratingSection === 'formulas'} />}
+                {!showAnalytics && activeTab === 'notes'      && <NotesTab      notes={results.short_notes}     loading={regeneratingSection === 'notes'} />}
+                {!showAnalytics && activeTab === 'flashcards' && <FlashcardsTab flashcards={results.flashcards} loading={regeneratingSection === 'flashcards'} />}
                 {!showAnalytics && activeTab === 'quiz'       && (
                   <QuizTab
                     files={files}
