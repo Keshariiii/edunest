@@ -13,6 +13,7 @@ import AnalyticsPanel from './components/AnalyticsPanel';
 import AuthView from './components/AuthView';
 import UserProfile from './components/UserProfile';
 import OfflinePage from './components/OfflinePage';
+import Dashboard from './components/Dashboard';
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
@@ -146,7 +147,7 @@ export default function App() {
         // Only navigate if not already showing cached results
         // This prevents a reconnect/refresh from wiping the results view
         const hasResults = !!localStorage.getItem('edunest_cached_results');
-        if (!hasResults) setView('app');
+        if (!hasResults) setView('dashboard');
       } else {
         // Token truly invalid — clear everything including cached materials
         localStorage.removeItem('edunest_access_token');
@@ -175,7 +176,7 @@ export default function App() {
   const handleAuthSuccess = (userData, accessToken) => {
     setUser(userData);
     setToken(accessToken);
-    setView('app');
+    setView('dashboard');
   };
 
   const handleLogout = async () => {
@@ -362,6 +363,7 @@ export default function App() {
   const isLandingView = view === 'landing';
   const isAuthView = view === 'login' || view === 'register';
   const isProfileView = view === 'profile';
+  const isDashboardView = view === 'dashboard';
   const isWorkshopView = view === 'app';
   const inResults = results !== null;
 
@@ -506,7 +508,7 @@ export default function App() {
           isOffline
             ? <OfflinePage onRetry={() => window.location.reload()} />
             : <LandingPage onGetStarted={() => {
-                if (user) setView('app');
+                if (user) setView('dashboard');
                 else setView('login');
               }} />
         )}
@@ -528,9 +530,17 @@ export default function App() {
               token={token}
               onLogout={handleLogout}
               onUserUpdate={(updatedUser) => setUser(updatedUser)}
-              onBack={() => setView('app')}
+              onBack={() => setView('dashboard')}
             />
           </div>
+        )}
+
+        {/* ── DASHBOARD ─────────────────────────────────────────────────── */}
+        {isDashboardView && !inResults && !isFullscreen && !showAnalytics && (
+          <Dashboard 
+            user={user} 
+            onOpenWorkshop={() => setView('app')} 
+          />
         )}
 
         {/* ── WORKSPACE (Upload Tool) ───────────────────────────────────── */}

@@ -116,7 +116,7 @@ const Navbar = ({
               setResults(null); 
               setFiles([]); 
               setSubject(''); 
-              setView('app'); 
+              setView(user ? 'dashboard' : 'landing'); 
               setShowAnalytics?.(false); 
             }
           }}
@@ -137,15 +137,19 @@ const Navbar = ({
         <div className="flex items-center gap-2 text-sm font-mono">
 
           {/* Back Button */}
-          {(showAnalytics || view === 'profile' || (view === 'app' && results !== null)) && (
+          {(showAnalytics || view === 'profile' || view === 'app') && (
             <button
               onClick={() => {
                 if (showAnalytics) {
                   setShowAnalytics(false);
                 } else if (view === 'profile') {
-                  setView(user ? 'app' : 'landing');
-                } else if (view === 'app' && results !== null) {
-                  setResults(null); setFiles([]); setSubject(''); setView('app');
+                  setView(user ? 'dashboard' : 'landing');
+                } else if (view === 'app') {
+                  if (results !== null) {
+                    setResults(null); setFiles([]); setSubject('');
+                  } else {
+                    setView('dashboard');
+                  }
                 }
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-[#111] text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-[#262626] rounded-md hover:bg-gray-200 dark:hover:bg-[#1a1a1a] hover:text-gray-900 dark:hover:text-white transition-colors text-xs font-bold shadow-sm"
