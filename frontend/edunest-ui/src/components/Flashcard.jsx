@@ -33,7 +33,7 @@ const Flashcard = ({ front, back, index, total, direction, isFlipped, setIsFlipp
 
           {/* Front */}
           <div
-            className="absolute w-full h-full border border-gray-200 dark:border-[#262626] rounded-2xl bg-white dark:bg-[#121212] flex flex-col items-center justify-center p-8 text-center transition-colors duration-300 ease-in-out group-hover:border-gray-300 dark:border-[#404040]"
+            className="absolute w-full h-full border border-gray-200 dark:border-[#262626] rounded-2xl bg-white dark:bg-[#121212] flex flex-col items-center justify-center p-8 text-center transition-all duration-300 ease-in-out group-hover:border-gray-300 dark:group-hover:border-[#404040] group-hover:shadow-lg dark:group-hover:ring-1 dark:group-hover:ring-white/[0.06]"
             style={{
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',
@@ -41,7 +41,7 @@ const Flashcard = ({ front, back, index, total, direction, isFlipped, setIsFlipp
               boxShadow: 'inset 0 0 60px rgba(99, 102, 241, 0.02)'
             }}
           >
-            <div className="text-lg md:text-2xl font-medium text-gray-800 dark:text-gray-100 leading-relaxed w-full z-10 font-sans px-4">
+            <div className="text-lg md:text-2xl font-medium text-gray-800 dark:text-gray-100 leading-relaxed w-full z-10 font-sans px-4 math-content">
               <MathText content={sanitizeFlashcardText(front)} />
             </div>
             <span className="absolute bottom-6 text-xs font-mono text-gray-500 flex items-center gap-2 transition-transform group-hover:-translate-y-1">Click to reveal <Layers size={14} /></span>
@@ -49,7 +49,7 @@ const Flashcard = ({ front, back, index, total, direction, isFlipped, setIsFlipp
 
           {/* Back */}
           <div
-            className="absolute w-full h-full border border-gray-200 dark:border-[#262626] rounded-2xl bg-white dark:bg-[#121212] flex flex-col items-center justify-center p-8 text-center transition-colors duration-300 ease-in-out group-hover:border-gray-300 dark:border-[#404040]"
+            className="absolute w-full h-full border border-gray-200 dark:border-[#262626] rounded-2xl bg-white dark:bg-[#121212] flex flex-col items-center justify-center p-8 text-center transition-all duration-300 ease-in-out group-hover:border-gray-300 dark:group-hover:border-[#404040] group-hover:shadow-lg dark:group-hover:ring-1 dark:group-hover:ring-white/[0.06]"
             style={{
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',
@@ -59,7 +59,7 @@ const Flashcard = ({ front, back, index, total, direction, isFlipped, setIsFlipp
           >
             <span className="absolute top-6 left-6 text-[10px] font-mono text-gray-600 dark:text-gray-400 tracking-widest uppercase opacity-70">Answer</span>
             <div className="w-full h-full overflow-y-auto custom-scrollbar flex flex-col items-center justify-center py-10">
-              <div className="text-base md:text-xl font-medium text-gray-800 dark:text-gray-100 leading-relaxed w-full z-10 font-sans px-4 text-left">
+              <div className="text-base md:text-xl font-medium text-gray-800 dark:text-gray-100 leading-relaxed w-full z-10 font-sans px-4 text-left math-content">
                 <MathText content={sanitizeFlashcardText(back)} />
               </div>
             </div>

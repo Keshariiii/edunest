@@ -432,6 +432,35 @@ export default function App() {
         .overflow-y-auto, .overflow-x-auto { -webkit-overflow-scrolling: touch; }
         /* Prevent pull-to-refresh in the results container on Android Chrome */
         main { overscroll-behavior-y: contain; }
+
+        /* ── Dark-mode Markdown / Highlight Fixes ─────────────────────── */
+        /* <mark> highlights — default browser yellow is unreadable in dark mode */
+        mark, .math-content mark {
+          background: linear-gradient(120deg, #fef08a 0%, #fde68a 100%);
+          color: #1c1917;
+          padding: 0.1em 0.25em;
+          border-radius: 3px;
+          box-decoration-break: clone;
+          -webkit-box-decoration-break: clone;
+        }
+        .dark mark, .dark .math-content mark {
+          background: linear-gradient(120deg, rgba(251,191,36,0.25) 0%, rgba(245,158,11,0.20) 100%);
+          color: #fbbf24;
+          box-shadow: 0 0 8px rgba(251,191,36,0.08);
+        }
+        /* Strong/bold inside notes — slightly brighter in dark mode */
+        .dark .math-content strong { color: #f3f4f6; }
+        /* Emphasis (italic) — subtle indigo tint in dark mode */
+        .dark .math-content em { color: #a5b4fc; font-style: italic; }
+        /* Inline code inside notes/flashcards */
+        .math-content code {
+          background: #f1f5f9; color: #334155;
+          padding: 0.15em 0.4em; border-radius: 4px;
+          font-size: 0.875em; font-family: ui-monospace, monospace;
+        }
+        .dark .math-content code {
+          background: #1e293b; color: #e2e8f0;
+        }
       `}</style>
 
       {/* Navbar — always visible, aware of fullscreen */}

@@ -50,8 +50,8 @@ const NotesTab = ({ notes, loading = false }) => {
                       const noteText = typeof note === 'string' ? note : (note?.note || note?.text || note?.content || JSON.stringify(note) || "");
                       return (
                         <li key={i} className="flex gap-4 items-start group w-full">
-                          <span className="font-mono text-gray-600 text-xs pt-1.5 shrink-0">[{actualIndex.toString().padStart(2, '0')}]</span>
-                          <div className="text-gray-700 dark:text-gray-300 leading-relaxed text-[15px] group-hover:text-gray-900 dark:text-white transition-colors w-full overflow-x-auto custom-scrollbar markdown-math">
+                          <span className="font-mono text-gray-400 dark:text-gray-500 text-xs pt-1.5 shrink-0">[{actualIndex.toString().padStart(2, '0')}]</span>
+                          <div className="text-gray-700 dark:text-gray-300 leading-relaxed text-[15px] group-hover:text-gray-900 dark:group-hover:text-white transition-colors w-full overflow-x-auto custom-scrollbar markdown-math math-content">
                             <MathText content={noteText} />
                           </div>
                         </li>
