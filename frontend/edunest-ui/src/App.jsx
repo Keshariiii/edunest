@@ -53,7 +53,8 @@ class ErrorBoundary extends React.Component {
 // ─── App ─────────────────────────────────────────────────────────────────────
 export default function App() {
   // 'landing' | 'app' | 'login' | 'register' | 'profile'
-  const [view, setView] = useState('landing');
+  // Start with 'loading' so we don't flash the landing page before auth check
+  const [view, setView] = useState('loading');
 
   // Auth State
   const [user, setUser] = useState(null);
@@ -78,11 +79,13 @@ export default function App() {
   });
   const mainContainerRef = useRef(null);
 
-  // Check Auth on Load
+  // Check Auth on Load — determines initial view
   useEffect(() => {
     const checkAuth = async () => {
       const storedToken = localStorage.getItem('edunest_access_token');
       if (!storedToken) {
+        // No token → show landing page
+        setView('landing');
         setAuthLoading(false);
         return;
       }
@@ -94,18 +97,19 @@ export default function App() {
         if (res.ok) {
           const userData = await res.json();
           setUser(userData);
-          // If they land on the landing page, redirect directly to the workshop
-          if (window.location.pathname === '/' && view === 'landing') {
-             setView('app');
-          }
+          // Valid token → go straight to workshop
+          setView('app');
         } else {
-          // Token invalid/expired
+          // Token invalid/expired → clear it and show landing
           localStorage.removeItem('edunest_access_token');
           localStorage.removeItem('edunest_refresh_token');
           setToken(null);
+          setView('landing');
         }
       } catch (e) {
         console.error('Failed to check auth status:', e);
+        // Network error → fall back to landing
+        setView('landing');
       } finally {
         setAuthLoading(false);
       }
@@ -355,6 +359,14 @@ export default function App() {
               onClearHistory={() => { setQuizHistory([]); }}
               onClose={() => setShowAnalytics(false)}
             />
+          </div>
+        )}
+
+        {/* ── INITIAL LOADING (auth check in progress) ───────────────── */}
+        {view === 'loading' && (
+          <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+            <div className="w-8 h-8 rounded-full border-2 border-indigo-500/30 border-t-indigo-500 animate-spin" />
+            <p className="text-gray-400 font-mono text-xs tracking-widest">Restoring session…</p>
           </div>
         )}
 
