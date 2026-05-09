@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 # Optional: docx/pptx support
 try:
+    # pyrefly: ignore [missing-import]
     from docx import Document as DocxDocument
     DOCX_AVAILABLE = True
 except ImportError:
@@ -20,6 +21,7 @@ except ImportError:
     print("WARNING: python-docx not installed. .docx uploads will be rejected.")
 
 try:
+    # pyrefly: ignore [missing-import]
     from pptx import Presentation as PptxPresentation
     PPTX_AVAILABLE = True
 except ImportError:

@@ -10,3 +10,5 @@ sqlalchemy
 passlib[bcrypt]
 python-jose[cryptography]
 email-validator
+python-docx
+python-pptx
