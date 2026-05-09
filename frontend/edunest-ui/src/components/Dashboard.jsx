@@ -2,7 +2,7 @@ import React from 'react';
 import { BookOpen, BrainCircuit, Calendar, LineChart, Sparkles, ArrowRight, Lock } from 'lucide-react';
 
 export default function Dashboard({ user, onOpenWorkshop }) {
-  const firstName = user?.full_name?.split(' ')[0] || 'Student';
+  const firstName = user?.username || 'Student';
 
   const features = [
     {
