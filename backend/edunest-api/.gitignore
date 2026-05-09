@@ -24,3 +24,7 @@ ENV/
 *.log
 dummy.txt
 test_upload.py
+
+# Database — never commit user data
+*.db
+edunest.db
