@@ -311,6 +311,9 @@ export default function App() {
       if (data.error) { setUploadError(data.details); return; }
       setResults(data);
       setActiveTab('formulas');
+      // Clear stale quiz cache — the old quiz belongs to the previous upload.
+      // Without this, the old quiz auto-loads when the user visits the quiz tab.
+      try { localStorage.removeItem('edunest_cached_quiz'); } catch {}
     } catch (error) {
       console.error('Backend Error:', error);
       if (error.name === 'AbortError') {

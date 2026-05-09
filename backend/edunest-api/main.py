@@ -367,7 +367,9 @@ async def generate_quiz(
             else:
                 file_parts.append(encode_file(file_data, ct or "application/octet-stream"))
 
-        batch_size = 3
+        # Use batch_size=10 so a typical 10-question quiz costs 1 API call, not 4.
+        # Previously batch_size=3 caused 10 questions → 4 Gemini calls (3+3+3+1).
+        batch_size = 10
         all_mcqs: List[dict[str, Any]] = []
 
         batches = [batch_size] * (num_questions // batch_size)

@@ -542,7 +542,16 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
                   <button onClick={() => setIsReviewMode(true)} className="px-8 py-3 bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#262626] text-gray-700 dark:text-gray-300 rounded-xl font-mono text-sm hover:border-gray-400 dark:hover:border-[#404040] hover:text-gray-900 dark:hover:text-white transition-colors shadow-sm">
                     View Trace Logs
                   </button>
-                  <button onClick={() => { setQuizData(null); if (isFullscreen) toggleFullscreen(); setIsReviewMode(false); setShowAnalytics(false); }} className="px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-bold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors shadow-sm">
+                  <button onClick={() => {
+                    // Clear quiz data from memory AND localStorage so that
+                    // switching tabs and returning does not reload the old quiz.
+                    setQuizData(null);
+                    setIsCachedQuiz(false);
+                    try { localStorage.removeItem('edunest_cached_quiz'); } catch {}
+                    if (isFullscreen) toggleFullscreen();
+                    setIsReviewMode(false);
+                    setShowAnalytics(false);
+                  }} className="px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-bold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors shadow-sm">
                     Initialize New Run
                   </button>
                 </div>
