@@ -158,8 +158,14 @@ async def call_gemini(parts: list, generation_config: dict) -> str:
     return text
 
 
-def parse_json_response(raw: str) -> dict:
-    """Strips optional markdown fences and parses JSON."""
+def parse_json_response(raw: str, raise_on_error: bool = True) -> dict:
+    """Strips optional markdown fences and parses JSON.
+    
+    Args:
+        raw: The raw string response from Gemini.
+        raise_on_error: If True (default), raises RuntimeError on JSON parse failure.
+                        If False, returns a graceful fallback dict (used by study-material endpoint).
+    """
     text = raw.strip()
     if text.startswith("```json"):
         text = text[7:]
@@ -171,7 +177,12 @@ def parse_json_response(raw: str) -> dict:
         return json.loads(text.strip())
     except json.JSONDecodeError as e:
         print(f"JSON Parsing Error: {e}")
-        # Return a safe fallback if Gemini outputs invalid JSON (like unescaped LaTeX)
+        if raise_on_error:
+            raise RuntimeError(
+                f"The AI returned invalid JSON that could not be parsed. "
+                f"Error: {e}. First 300 chars of response: {text[:300]}"
+            ) from e
+        # Graceful fallback for study-material endpoint only
         return {
             "formulas": [],
             "short_notes": ["Analysis completed, but the AI response contained invalid formatting.", text.strip()],
@@ -315,7 +326,7 @@ async def generate_study_material(
                 else:
                     raise RuntimeError("Gemini API timed out after 5 minutes. Please try a smaller file.") from e
 
-        data = parse_json_response(raw_response)
+        data = parse_json_response(raw_response, raise_on_error=False)
         return {
             "metadata":    data.get("metadata", {"chapter_title": "", "topics_covered": []}),
             "formulas":    data.get("formulas", []),
@@ -575,7 +586,7 @@ async def regenerate_section(
         generation_config = {"responseMimeType": "application/json", "temperature": 0.4}
 
         raw_response = await call_gemini(parts, generation_config)
-        data = parse_json_response(raw_response)
+        data = parse_json_response(raw_response, raise_on_error=False)
 
         # Return only the requested section
         if section_type == "formulas":

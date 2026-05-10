@@ -34,6 +34,17 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
   }, [quizData, currentMcqIndex, submittedAnswers, isQuizFinished, isReviewMode]);
 
   const handleGenerateQuiz = async () => {
+    // Guard: files are lost after a page refresh — they can't be stored in localStorage.
+    // Show a clear error instead of silently sending empty FormData to the backend.
+    if (!files || files.length === 0) {
+      setQuizData([]);
+      setQuizErrorMsg(
+        "No files found. Browser sessions cannot retain uploaded files after a refresh.\n\n" +
+        "Please go back to the Workshop (use the Back button in the navbar) and re-upload your study material to generate a new quiz."
+      );
+      return;
+    }
+
     setIsQuizGenerating(true);
     setQuizErrorMsg("");
     setQuizLoadingStatus("Generating Quiz...");
