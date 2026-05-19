@@ -1,0 +1,11 @@
+fastapi==0.111.0
+uvicorn==0.29.0
+python-multipart==0.0.9
+langchain==0.2.14
+langchain-openai==0.1.22
+langchain-community==0.2.12
+pypdf==4.2.0
+faiss-cpu==1.8.0
+tiktoken==0.7.0
+python-dotenv==1.0.1
+tavily-python==0.3.3

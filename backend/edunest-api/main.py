@@ -513,6 +513,338 @@ async def evaluate_quiz(request: QuizEvaluationRequest):
     }
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# AI DOUBT SOLVER — Merged Chatbot Backend
+# Upload PDFs, index them with FAISS + Gemini embeddings, chat with context.
+# ─────────────────────────────────────────────────────────────────────────────
+import hashlib
+import re
+from pathlib import Path as PathLib
+
+# Directories for doubt solver data
+DOUBT_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "doubt_solver_data")
+DOUBT_UPLOAD_DIR = os.path.join(DOUBT_DATA_DIR, "uploads")
+DOUBT_INDEX_DIR = os.path.join(DOUBT_DATA_DIR, "index")
+os.makedirs(DOUBT_UPLOAD_DIR, exist_ok=True)
+os.makedirs(DOUBT_INDEX_DIR, exist_ok=True)
+
+# In-memory session chat histories
+_chat_sessions: dict[str, list[dict]] = {}
+
+# Simple text chunking (no LangChain dependency needed)
+def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 150) -> list[str]:
+    """Split text into overlapping chunks."""
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + chunk_size
+        chunks.append(text[start:end])
+        start = end - overlap
+    return [c.strip() for c in chunks if c.strip()]
+
+# Extract text from PDF using PyPDF2 (already available via pypdf)
+def extract_pdf_text(file_data: bytes) -> str:
+    """Extract text from a PDF file."""
+    try:
+        from pypdf import PdfReader
+        reader = PdfReader(BytesIO(file_data))
+        pages_text = []
+        for page in reader.pages:
+            text = page.extract_text()
+            if text:
+                pages_text.append(text)
+        return "\n\n".join(pages_text)
+    except ImportError:
+        raise RuntimeError("pypdf not installed. Run: pip install pypdf")
+    except Exception as e:
+        raise RuntimeError(f"Failed to extract PDF text: {e}")
+
+
+async def get_gemini_embedding(text: str) -> list[float]:
+    """Get embedding from Gemini API."""
+    api_key = get_api_key()
+    embed_url = f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={api_key}"
+    payload = {
+        "model": "models/text-embedding-004",
+        "content": {"parts": [{"text": text}]}
+    }
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.post(embed_url, json=payload)
+        resp.raise_for_status()
+    result = resp.json()
+    return result["embedding"]["values"]
+
+
+async def get_gemini_embeddings_batch(texts: list[str]) -> list[list[float]]:
+    """Get embeddings for a batch of texts (sequentially to avoid rate limits)."""
+    embeddings = []
+    for i, text in enumerate(texts):
+        try:
+            emb = await get_gemini_embedding(text)
+            embeddings.append(emb)
+        except Exception as e:
+            print(f"Embedding error for chunk {i}: {e}")
+            embeddings.append([0.0] * 768)  # fallback zero vector
+        # Small delay to avoid rate limits
+        if i > 0 and i % 5 == 0:
+            await asyncio.sleep(0.5)
+    return embeddings
+
+
+def cosine_similarity(a: list[float], b: list[float]) -> float:
+    """Compute cosine similarity between two vectors."""
+    import math
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = math.sqrt(sum(x * x for x in a))
+    norm_b = math.sqrt(sum(x * x for x in b))
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return dot / (norm_a * norm_b)
+
+
+# Simple vector store (JSON-based, no FAISS dependency required)
+VECTOR_STORE_FILE = os.path.join(DOUBT_INDEX_DIR, "vectors.json")
+
+def load_vector_store() -> dict:
+    """Load the vector store from disk."""
+    if os.path.exists(VECTOR_STORE_FILE):
+        with open(VECTOR_STORE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"chunks": [], "embeddings": [], "metadata": []}
+
+def save_vector_store(store: dict):
+    """Save the vector store to disk."""
+    with open(VECTOR_STORE_FILE, "w", encoding="utf-8") as f:
+        json.dump(store, f)
+
+
+def search_vectors(query_embedding: list[float], store: dict, top_k: int = 5) -> list[dict]:
+    """Search the vector store for the most similar chunks."""
+    if not store["chunks"]:
+        return []
+    
+    scores = []
+    for i, emb in enumerate(store["embeddings"]):
+        sim = cosine_similarity(query_embedding, emb)
+        scores.append((i, sim))
+    
+    scores.sort(key=lambda x: x[1], reverse=True)
+    results = []
+    for idx, score in scores[:top_k]:
+        results.append({
+            "chunk": store["chunks"][idx],
+            "score": score,
+            "metadata": store["metadata"][idx] if idx < len(store["metadata"]) else {}
+        })
+    return results
+
+
+# Pydantic models for doubt solver
+class DoubtChatRequest(BaseModel):
+    session_id: str
+    question: str
+
+class DoubtChatResponse(BaseModel):
+    answer: str
+    sources: list[str] = []
+
+
+@app.post("/api/doubt-solver/upload")
+async def doubt_solver_upload(files: List[UploadFile] = File(...)):
+    """
+    Upload PDFs to the AI Doubt Solver. Extracts text, chunks it,
+    generates Gemini embeddings, and stores in a vector index.
+    """
+    if not files:
+        raise HTTPException(status_code=400, detail="No files provided.")
+
+    all_chunks = []
+    all_metadata = []
+    saved_files = []
+
+    try:
+        for file in files:
+            fname = (file.filename or "unknown").lower()
+            file_data = await file.read()
+            
+            # Extract text based on file type
+            if fname.endswith(".pdf"):
+                text = extract_pdf_text(file_data)
+            elif fname.endswith(".docx"):
+                if not DOCX_AVAILABLE:
+                    raise HTTPException(status_code=400, detail="python-docx not installed on server.")
+                text = extract_text_from_docx(file_data)
+            elif fname.endswith(".pptx"):
+                if not PPTX_AVAILABLE:
+                    raise HTTPException(status_code=400, detail="python-pptx not installed on server.")
+                text = extract_text_from_pptx(file_data)
+            elif fname.endswith(".txt"):
+                text = file_data.decode("utf-8", errors="ignore")
+            else:
+                raise HTTPException(status_code=400, detail=f"Unsupported file type: {fname}. Use PDF, DOCX, PPTX, or TXT.")
+            
+            if not text.strip():
+                continue
+            
+            # Save file locally
+            save_path = os.path.join(DOUBT_UPLOAD_DIR, file.filename or "unknown")
+            with open(save_path, "wb") as f:
+                f.write(file_data)
+            saved_files.append(file.filename)
+            
+            # Chunk the text
+            chunks = chunk_text(text)
+            for chunk in chunks:
+                all_chunks.append(chunk)
+                all_metadata.append({"source": file.filename, "type": fname.split(".")[-1]})
+        
+        if not all_chunks:
+            raise HTTPException(status_code=400, detail="No readable text found in the uploaded files.")
+        
+        # Generate embeddings
+        print(f"Generating embeddings for {len(all_chunks)} chunks...")
+        embeddings = await get_gemini_embeddings_batch(all_chunks)
+        
+        # Load existing store and append
+        store = load_vector_store()
+        store["chunks"].extend(all_chunks)
+        store["embeddings"].extend(embeddings)
+        store["metadata"].extend(all_metadata)
+        save_vector_store(store)
+        
+        return {
+            "message": f"Successfully processed {len(saved_files)} file(s).",
+            "files": saved_files,
+            "chunks_indexed": len(all_chunks),
+            "total_chunks_in_store": len(store["chunks"])
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Upload error: {str(e)}")
+
+
+@app.post("/api/doubt-solver/chat", response_model=DoubtChatResponse)
+async def doubt_solver_chat(request: DoubtChatRequest):
+    """
+    Chat with the AI Doubt Solver. Searches uploaded documents for context,
+    then uses Gemini to generate an answer with conversational memory.
+    """
+    if not request.question.strip():
+        raise HTTPException(status_code=400, detail="Question cannot be empty.")
+
+    try:
+        store = load_vector_store()
+        context_chunks = []
+        sources = []
+        
+        # Search for relevant context if documents are indexed
+        if store["chunks"]:
+            query_embedding = await get_gemini_embedding(request.question)
+            results = search_vectors(query_embedding, store, top_k=5)
+            context_chunks = [r["chunk"] for r in results if r["score"] > 0.3]
+            sources = list(set(
+                r["metadata"].get("source", "uploaded document") 
+                for r in results if r["score"] > 0.3
+            ))
+        
+        # Build chat history
+        session_id = request.session_id
+        if session_id not in _chat_sessions:
+            _chat_sessions[session_id] = []
+        
+        history = _chat_sessions[session_id]
+        
+        # Build the prompt
+        context_text = ""
+        if context_chunks:
+            context_text = "\n\n---\n\n".join(context_chunks)
+            context_text = f"\n\nRELEVANT CONTEXT FROM STUDY MATERIALS:\n{context_text}\n"
+        
+        # Build conversation history string
+        history_text = ""
+        if history:
+            recent = history[-10:]  # last 10 messages
+            for msg in recent:
+                role = "Student" if msg["role"] == "user" else "Tutor"
+                history_text += f"{role}: {msg['content']}\n"
+        
+        system_prompt = f"""You are EduNest AI Tutor — a brilliant, patient, and encouraging study companion. 
+Your role is to help students understand concepts from their uploaded study materials.
+
+INSTRUCTIONS:
+- If context from study materials is provided, use it as your PRIMARY source of truth.
+- Explain concepts clearly with examples, step-by-step breakdowns, and analogies.
+- Use LaTeX notation (wrapped in $...$ for inline, $$...$$ for block) for any math.
+- If the question is outside the uploaded materials, still help using your general knowledge but mention this.
+- Be conversational and supportive. Use short paragraphs for readability.
+- If the student seems confused, offer to break down the concept further.
+{context_text}
+
+CONVERSATION HISTORY:
+{history_text}"""
+
+        parts = [
+            {"text": system_prompt},
+            {"text": f"Student's question: {request.question}"}
+        ]
+        
+        generation_config = {
+            "temperature": 0.4,
+            "maxOutputTokens": 2048,
+        }
+        
+        answer = await call_gemini(parts, generation_config)
+        
+        # Update session history
+        history.append({"role": "user", "content": request.question})
+        history.append({"role": "assistant", "content": answer})
+        
+        # Keep history manageable
+        if len(history) > 40:
+            _chat_sessions[session_id] = history[-30:]
+        
+        return DoubtChatResponse(answer=answer, sources=sources)
+
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
+
+
+@app.delete("/api/doubt-solver/clear")
+async def doubt_solver_clear(session_id: str = ""):
+    """Clear the vector store and/or chat history."""
+    if session_id and session_id in _chat_sessions:
+        del _chat_sessions[session_id]
+    
+    # Clear vector store
+    store = {"chunks": [], "embeddings": [], "metadata": []}
+    save_vector_store(store)
+    
+    # Clear uploaded files
+    import glob
+    for f in glob.glob(os.path.join(DOUBT_UPLOAD_DIR, "*")):
+        try:
+            os.remove(f)
+        except:
+            pass
+    
+    return {"message": "Doubt solver data cleared successfully."}
+
+
+@app.get("/api/doubt-solver/status")
+async def doubt_solver_status():
+    """Check if documents are uploaded and indexed."""
+    store = load_vector_store()
+    return {
+        "has_documents": len(store["chunks"]) > 0,
+        "total_chunks": len(store["chunks"]),
+        "sources": list(set(m.get("source", "unknown") for m in store.get("metadata", [])))
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))

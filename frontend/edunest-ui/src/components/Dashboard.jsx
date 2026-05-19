@@ -1,7 +1,7 @@
 import React from 'react';
 import { BookOpen, BrainCircuit, Calendar, LineChart, Sparkles, ArrowRight, Lock } from 'lucide-react';
 
-export default function Dashboard({ user, onOpenWorkshop }) {
+export default function Dashboard({ user, onOpenWorkshop, onOpenDoubtSolver }) {
   const firstName = user?.username || 'Student';
 
   const features = [
@@ -21,8 +21,9 @@ export default function Dashboard({ user, onOpenWorkshop }) {
       description: 'Stuck on a concept? Chat with an AI tutor trained on your specific study materials.',
       icon: <BrainCircuit className="w-6 h-6 text-emerald-500 dark:text-emerald-400" />,
       color: 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20',
-      action: null,
-      status: 'coming_soon'
+      action: onOpenDoubtSolver,
+      actionText: 'Open Doubt Solver',
+      status: 'active'
     },
     {
       id: 'study_planner',
@@ -83,6 +84,14 @@ export default function Dashboard({ user, onOpenWorkshop }) {
               </div>
             )}
 
+            {/* Active Badge for Doubt Solver */}
+            {feature.id === 'doubt_solver' && feature.status === 'active' && (
+              <div className="absolute top-6 right-6 flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold uppercase tracking-wider">
+                <Sparkles size={12} />
+                NEW
+              </div>
+            )}
+
             <div className="relative z-10">
               <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-6 border ${feature.color}`}>
                 {feature.icon}
@@ -98,7 +107,11 @@ export default function Dashboard({ user, onOpenWorkshop }) {
 
               {feature.status === 'active' && (
                 <button 
-                  className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-semibold group-hover:gap-3 transition-all duration-300"
+                  className={`flex items-center gap-2 font-semibold group-hover:gap-3 transition-all duration-300 ${
+                    feature.id === 'doubt_solver' 
+                      ? 'text-emerald-600 dark:text-emerald-400' 
+                      : 'text-indigo-600 dark:text-indigo-400'
+                  }`}
                 >
                   {feature.actionText} <ArrowRight size={18} />
                 </button>

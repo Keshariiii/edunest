@@ -14,6 +14,7 @@ import AuthView from './components/AuthView';
 import UserProfile from './components/UserProfile';
 import OfflinePage from './components/OfflinePage';
 import Dashboard from './components/Dashboard';
+import DoubtSolver from './components/DoubtSolver';
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
@@ -367,6 +368,7 @@ export default function App() {
   const isAuthView = view === 'login' || view === 'register';
   const isProfileView = view === 'profile';
   const isDashboardView = view === 'dashboard';
+  const isDoubtSolverView = view === 'doubt_solver';
   const isWorkshopView = view === 'app';
   const inResults = results !== null;
 
@@ -542,8 +544,14 @@ export default function App() {
         {isDashboardView && !inResults && !isFullscreen && !showAnalytics && (
           <Dashboard 
             user={user} 
-            onOpenWorkshop={() => setView('app')} 
+            onOpenWorkshop={() => setView('app')}
+            onOpenDoubtSolver={() => setView('doubt_solver')}
           />
+        )}
+
+        {/* ── AI DOUBT SOLVER ─────────────────────────────────────────── */}
+        {isDoubtSolverView && !inResults && !isFullscreen && !showAnalytics && (
+          <DoubtSolver onBack={() => setView('dashboard')} />
         )}
 
         {/* ── WORKSPACE (Upload Tool) ───────────────────────────────────── */}
