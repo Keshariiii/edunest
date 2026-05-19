@@ -60,6 +60,9 @@ export default function App() {
   const [view, setView] = useState(() => {
     const hasToken   = !!localStorage.getItem('edunest_access_token');
     const hasResults = !!localStorage.getItem('edunest_cached_results');
+    const savedView  = sessionStorage.getItem('edunest_current_view');
+    // Restore the exact view the user was on before refresh (if logged in)
+    if (hasToken && savedView && savedView !== 'landing' && savedView !== 'loading') return savedView;
     if (hasToken && hasResults) return 'app';  // drop straight into results
     if (!hasToken)              return 'landing'; // no session — show landing
     return 'loading';                            // token but no results — verify
@@ -145,20 +148,27 @@ export default function App() {
       if (res.ok) {
         const userData = await res.json();
         setUser(userData);
-        // Only navigate if not already showing cached results
-        // This prevents a reconnect/refresh from wiping the results view
+        setToken(storedToken);
+        // Only navigate if still in the initial 'loading' verification state.
+        // If the view was already restored from sessionStorage (e.g. 'doubt_solver',
+        // 'dashboard', 'app'), don't override it.
         const hasResults = !!localStorage.getItem('edunest_cached_results');
-        if (!hasResults) setView('dashboard');
-      } else {
-        // Token truly invalid — clear everything including cached materials
+        if (!hasResults && view === 'loading') setView('dashboard');
+      } else if (res.status === 401) {
+        // Token truly invalid (401 Unauthorized) — clear everything
         localStorage.removeItem('edunest_access_token');
         localStorage.removeItem('edunest_refresh_token');
         localStorage.removeItem('edunest_cached_results');
         localStorage.removeItem('edunest_subject');
         localStorage.removeItem('edunest_active_tab');
+        sessionStorage.removeItem('edunest_current_view');
+        sessionStorage.removeItem('edunest_chatbot_session_id');
         setToken(null);
         setResults(null);
         setView('landing');
+      } else {
+        // Other server errors (500, 502, etc.) — don't wipe session, just log
+        console.warn(`Auth check returned status ${res.status}, keeping session.`);
       }
     } catch (e) {
       console.error('Failed to check auth status:', e);
@@ -195,6 +205,8 @@ export default function App() {
     localStorage.removeItem('edunest_cached_results');
     localStorage.removeItem('edunest_subject');
     localStorage.removeItem('edunest_active_tab');
+    sessionStorage.removeItem('edunest_current_view');
+    sessionStorage.removeItem('edunest_chatbot_session_id');
     setUser(null);
     setToken(null);
     setResults(null);
@@ -224,6 +236,13 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('edunest_active_tab', activeTab);
   }, [activeTab]);
+
+  // Persist current view to sessionStorage so refresh preserves the active page
+  useEffect(() => {
+    if (view !== 'loading') {
+      sessionStorage.setItem('edunest_current_view', view);
+    }
+  }, [view]);
 
   // Detect files lost after a refresh when results are cached but files array is empty
   useEffect(() => {
@@ -549,7 +568,7 @@ export default function App() {
           />
         )}
 
-        {/* ── AI DOUBT SOLVER ─────────────────────────────────────────── */}
+        {/* ── AI CHATBOT ────────────────────────────────────────────── */}
         {isDoubtSolverView && !inResults && !isFullscreen && !showAnalytics && (
           <DoubtSolver onBack={() => setView('dashboard')} />
         )}

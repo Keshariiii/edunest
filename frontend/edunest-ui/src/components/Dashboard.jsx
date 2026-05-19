@@ -17,12 +17,12 @@ export default function Dashboard({ user, onOpenWorkshop, onOpenDoubtSolver }) {
     },
     {
       id: 'doubt_solver',
-      title: 'AI Doubt Solver',
+      title: 'AI Chatbot',
       description: 'Stuck on a concept? Chat with an AI tutor trained on your specific study materials.',
       icon: <BrainCircuit className="w-6 h-6 text-emerald-500 dark:text-emerald-400" />,
       color: 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20',
       action: onOpenDoubtSolver,
-      actionText: 'Open Doubt Solver',
+      actionText: 'Open AI Chatbot',
       status: 'active'
     },
     {
@@ -84,7 +84,7 @@ export default function Dashboard({ user, onOpenWorkshop, onOpenDoubtSolver }) {
               </div>
             )}
 
-            {/* Active Badge for Doubt Solver */}
+            {/* Active Badge for AI Chatbot */}
             {feature.id === 'doubt_solver' && feature.status === 'active' && (
               <div className="absolute top-6 right-6 flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold uppercase tracking-wider">
                 <Sparkles size={12} />
