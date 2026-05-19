@@ -649,10 +649,34 @@ class DoubtChatResponse(BaseModel):
     sources: list[str] = []
 
 
+# Image extensions supported for OCR via Gemini Vision
+_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".tiff", ".tif"}
+
+async def extract_text_from_image(file_data: bytes, mime_type: str) -> str:
+    """Use Gemini Vision to extract / transcribe ALL text from an image,
+    including handwritten notes, diagrams with labels, and printed text."""
+    image_part = encode_file(file_data, mime_type)
+    prompt = {
+        "text": (
+            "You are an expert OCR and handwriting recognition system. "
+            "Carefully examine this image and transcribe ALL text you can see — "
+            "printed text, handwritten notes, equations, labels on diagrams, "
+            "annotations, headings, bullet points, and any other written content. "
+            "Preserve the original structure as much as possible (headings, lists, paragraphs). "
+            "For mathematical equations, write them in a readable text format. "
+            "If the image contains a diagram, briefly describe it and include any labels. "
+            "Output ONLY the transcribed text, nothing else."
+        )
+    }
+    generation_config = {"temperature": 0.1, "maxOutputTokens": 4096}
+    return await call_gemini([prompt, image_part], generation_config)
+
+
 @app.post("/api/doubt-solver/upload")
 async def doubt_solver_upload(files: List[UploadFile] = File(...)):
     """
-    Upload PDFs to the AI Doubt Solver. Extracts text, chunks it,
+    Upload PDFs, documents, or images to the AI Doubt Solver.
+    Extracts text (using OCR for images / handwritten notes), chunks it,
     generates Gemini embeddings, and stores in a vector index.
     """
     if not files:
@@ -666,7 +690,9 @@ async def doubt_solver_upload(files: List[UploadFile] = File(...)):
         for file in files:
             fname = (file.filename or "unknown").lower()
             file_data = await file.read()
-            
+            ct = file.content_type or ""
+            ext = os.path.splitext(fname)[1]
+
             # Extract text based on file type
             if fname.endswith(".pdf"):
                 text = extract_pdf_text(file_data)
@@ -680,38 +706,48 @@ async def doubt_solver_upload(files: List[UploadFile] = File(...)):
                 text = extract_text_from_pptx(file_data)
             elif fname.endswith(".txt"):
                 text = file_data.decode("utf-8", errors="ignore")
+            elif ext in _IMAGE_EXTENSIONS or ct.startswith("image/"):
+                # Use Gemini Vision to OCR the image (handles handwritten notes)
+                mime = ct if ct.startswith("image/") else f"image/{ext.lstrip('.')}"
+                if mime == "image/jpg":
+                    mime = "image/jpeg"
+                print(f"  OCR-ing image: {file.filename} ({mime})")
+                text = await extract_text_from_image(file_data, mime)
             else:
-                raise HTTPException(status_code=400, detail=f"Unsupported file type: {fname}. Use PDF, DOCX, PPTX, or TXT.")
-            
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Unsupported file type: {fname}. Use PDF, DOCX, PPTX, TXT, or images (JPG/PNG/WEBP)."
+                )
+
             if not text.strip():
                 continue
-            
+
             # Save file locally
             save_path = os.path.join(DOUBT_UPLOAD_DIR, file.filename or "unknown")
             with open(save_path, "wb") as f:
                 f.write(file_data)
             saved_files.append(file.filename)
-            
+
             # Chunk the text
             chunks = chunk_text(text)
             for chunk in chunks:
                 all_chunks.append(chunk)
-                all_metadata.append({"source": file.filename, "type": fname.split(".")[-1]})
-        
+                all_metadata.append({"source": file.filename, "type": ext.lstrip(".") or "unknown"})
+
         if not all_chunks:
             raise HTTPException(status_code=400, detail="No readable text found in the uploaded files.")
-        
+
         # Generate embeddings
         print(f"Generating embeddings for {len(all_chunks)} chunks...")
         embeddings = await get_gemini_embeddings_batch(all_chunks)
-        
+
         # Load existing store and append
         store = load_vector_store()
         store["chunks"].extend(all_chunks)
         store["embeddings"].extend(embeddings)
         store["metadata"].extend(all_metadata)
         save_vector_store(store)
-        
+
         return {
             "message": f"Successfully processed {len(saved_files)} file(s).",
             "files": saved_files,
