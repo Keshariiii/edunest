@@ -1,6 +1,98 @@
 /* eslint-disable */
-import React, { useState } from 'react';
-import { User, Mail, Calendar, Lock, LogOut, Edit3, Check, X, Loader2, AlertCircle, Shield, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { User, Mail, Calendar, Lock, LogOut, Edit3, Check, X, Loader2, AlertCircle, Shield, ArrowLeft, Flame, Zap } from 'lucide-react';
+
+// ─── Activity Streak Hook (converted from activity.js) ─────────────────────
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+function getWeekNumber() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  return Math.floor((now - start) / (1000 * 60 * 60 * 24 * 7));
+}
+
+function useStreak() {
+  const [streak, setStreak] = useState(0);
+  const [checkedDays, setCheckedDays] = useState([false, false, false, false, false, false, false]);
+
+  const todayIndex = (new Date().getDay() + 6) % 7; // Mon=0 … Sun=6
+
+  const loadState = useCallback(() => {
+    // Reset if new week
+    const currentWeek = getWeekNumber();
+    const savedWeek = localStorage.getItem('edunest_savedWeek');
+    if (savedWeek !== null && parseInt(savedWeek) !== currentWeek) {
+      for (let i = 0; i < 7; i++) localStorage.removeItem('edunest_day-' + i);
+      localStorage.setItem('edunest_savedWeek', currentWeek);
+    } else if (savedWeek === null) {
+      localStorage.setItem('edunest_savedWeek', currentWeek);
+    }
+
+    // Load checked days
+    const days = [];
+    for (let i = 0; i < 7; i++) days.push(localStorage.getItem('edunest_day-' + i) === 'checked');
+    setCheckedDays(days);
+    setStreak(parseInt(localStorage.getItem('edunest_streak')) || 0);
+  }, []);
+
+  // Auto check-in today on mount
+  useEffect(() => {
+    loadState();
+    if (localStorage.getItem('edunest_day-' + todayIndex) !== 'checked') {
+      localStorage.setItem('edunest_day-' + todayIndex, 'checked');
+      let s = parseInt(localStorage.getItem('edunest_streak')) || 0;
+      const lastDay = localStorage.getItem('edunest_lastDay');
+      if (lastDay === null) { s = 1; }
+      else {
+        const diff = todayIndex - parseInt(lastDay);
+        s = (diff === 1 || diff === -6) ? s + 1 : 1;
+      }
+      localStorage.setItem('edunest_streak', s);
+      localStorage.setItem('edunest_lastDay', todayIndex);
+      loadState();
+    }
+  }, []);
+
+  return { streak, checkedDays, todayIndex };
+}
+
+// ─── Streak Card Component ──────────────────────────────────────────────────
+function ActivityStreak() {
+  const { streak, checkedDays, todayIndex } = useStreak();
+  return (
+    <div className="pt-4 border-t border-gray-100 dark:border-[#1e1e1e]">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+          <Zap size={12} className="text-amber-500" /> Weekly Activity
+        </h4>
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
+          <Flame size={13} className="text-amber-500" />
+          <span className="text-xs font-bold text-amber-600 dark:text-amber-400 font-mono">{streak} day streak</span>
+        </div>
+      </div>
+      <div className="grid grid-cols-7 gap-1.5">
+        {DAY_LABELS.map((label, i) => {
+          const isToday = i === todayIndex;
+          const isChecked = checkedDays[i];
+          return (
+            <div key={i} className="flex flex-col items-center gap-1.5">
+              <span className={`text-[10px] font-mono font-semibold ${isToday ? 'text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>{label}</span>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                isChecked
+                  ? 'bg-emerald-500 shadow-md shadow-emerald-500/30 scale-105'
+                  : isToday
+                    ? 'bg-emerald-500/10 border-2 border-dashed border-emerald-400/50'
+                    : 'bg-gray-100 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#262626]'
+              }`}>
+                {isChecked && <Check size={14} className="text-white" strokeWidth={3} />}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function UserProfile({ user, token, onLogout, onUserUpdate, onBack }) {
   const [editing, setEditing] = useState(false);
@@ -190,6 +282,9 @@ export default function UserProfile({ user, token, onLogout, onUserUpdate, onBac
             <span className="text-gray-900 dark:text-white font-mono text-xs">{joinDate}</span>
           </div>
         </div>
+
+        {/* Activity Streak */}
+        <ActivityStreak />
 
         {/* Change Password */}
         <div className="pt-3 border-t border-gray-100 dark:border-[#1e1e1e]">
