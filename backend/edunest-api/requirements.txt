@@ -12,3 +12,4 @@ python-jose[cryptography]
 email-validator
 python-docx
 python-pptx
+pypdf
