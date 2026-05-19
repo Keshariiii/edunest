@@ -4,69 +4,7 @@ import {
   ChevronLeft, Sparkles, ArrowRight, MessageSquare,
   AlertTriangle, CheckCircle2, File, Paperclip, Upload, X, Image
 } from 'lucide-react';
-
-// ── Markdown-ish renderer ──────────────────────────────────────────────────
-function formatMessage(text) {
-  if (!text) return '';
-  const parts = text.split(/(```[\s\S]*?```)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('```') && part.endsWith('```')) {
-      const code = part.slice(3, -3).replace(/^\w+\n/, '');
-      return (
-        <pre key={i} className="bg-gray-100 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#2a2a2a] rounded-lg p-3 my-2 overflow-x-auto text-xs font-mono">
-          <code>{code}</code>
-        </pre>
-      );
-    }
-    return <span key={i}>{processInlineFormatting(part)}</span>;
-  });
-}
-
-function processInlineFormatting(text) {
-  const segments = text.split(/(\$\$[\s\S]*?\$\$|\$[^$]+?\$)/g);
-  return segments.map((seg, i) => {
-    if (seg.startsWith('$$') && seg.endsWith('$$')) {
-      return (
-        <div key={i} className="my-2 px-3 py-2 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 rounded-lg font-mono text-sm text-indigo-700 dark:text-indigo-300 overflow-x-auto">
-          {seg.slice(2, -2)}
-        </div>
-      );
-    }
-    if (seg.startsWith('$') && seg.endsWith('$')) {
-      return (
-        <code key={i} className="px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200/50 dark:border-indigo-500/20 rounded text-indigo-600 dark:text-indigo-400 font-mono text-[0.85em]">
-          {seg.slice(1, -1)}
-        </code>
-      );
-    }
-    return processTextFormatting(seg, i);
-  });
-}
-
-function processTextFormatting(text, key) {
-  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
-  return (
-    <span key={key}>
-      {parts.map((part, j) => {
-        if (part.startsWith('**') && part.endsWith('**')) {
-          return <strong key={j} className="font-bold text-gray-900 dark:text-white">{part.slice(2, -2)}</strong>;
-        }
-        if (part.startsWith('*') && part.endsWith('*')) {
-          return <em key={j} className="italic text-gray-700 dark:text-gray-300">{part.slice(1, -1)}</em>;
-        }
-        if (part.startsWith('`') && part.endsWith('`')) {
-          return <code key={j} className="px-1.5 py-0.5 bg-gray-100 dark:bg-[#1e1e1e] border border-gray-200 dark:border-[#333] rounded text-sm font-mono">{part.slice(1, -1)}</code>;
-        }
-        return part.split('\n').map((line, k) => (
-          <React.Fragment key={`${j}-${k}`}>
-            {k > 0 && <br />}
-            {line}
-          </React.Fragment>
-        ));
-      })}
-    </span>
-  );
-}
+import MathText from './MathText';
 
 function TypingIndicator() {
   return (
@@ -86,7 +24,13 @@ export default function DoubtSolver({ onBack }) {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [hasDocuments, setHasDocuments] = useState(false);
-  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+  const [sessionId] = useState(() => {
+    const existing = sessionStorage.getItem('edunest_chatbot_session_id');
+    if (existing) return existing;
+    const newId = `session_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    sessionStorage.setItem('edunest_chatbot_session_id', newId);
+    return newId;
+  });
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
 
@@ -100,7 +44,7 @@ export default function DoubtSolver({ onBack }) {
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const resp = await fetch(`${apiBase}/api/doubt-solver/status`);
+        const resp = await fetch(`${apiBase}/api/doubt-solver/status?session_id=${sessionId}`);
         if (resp.ok) {
           const data = await resp.json();
           setHasDocuments(data.has_documents);
@@ -141,7 +85,7 @@ export default function DoubtSolver({ onBack }) {
     ]);
 
     try {
-      const resp = await fetch(`${apiBase}/api/doubt-solver/upload`, {
+      const resp = await fetch(`${apiBase}/api/doubt-solver/upload?session_id=${sessionId}`, {
         method: 'POST',
         body: formData,
       });
@@ -230,6 +174,8 @@ export default function DoubtSolver({ onBack }) {
       setMessages([]);
       setUploadedFiles([]);
       setHasDocuments(false);
+      // Remove persisted session so next mount creates a fresh one
+      sessionStorage.removeItem('edunest_chatbot_session_id');
     } catch (e) {
       console.error('Clear error:', e);
     }
@@ -289,7 +235,7 @@ export default function DoubtSolver({ onBack }) {
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              AI Doubt Solver
+              AI Chatbot
               <Sparkles className="w-4 h-4 text-emerald-400 animate-pulse" />
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -379,8 +325,8 @@ export default function DoubtSolver({ onBack }) {
                     <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">EduNest AI</span>
                   </div>
                 )}
-                <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                  {formatMessage(msg.content)}
+                <div className="text-sm leading-relaxed break-words">
+                  <MathText content={msg.content} />
                 </div>
                 {msg.sources?.length > 0 && (
                   <div className="mt-3 pt-2 border-t border-gray-200 dark:border-[#262626]">

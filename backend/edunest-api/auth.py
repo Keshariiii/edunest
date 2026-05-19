@@ -23,8 +23,11 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 # ── JWT tokens ─────────────────────────────────────────────────────────────────
-# Secret key — generated once per server start; in production use an env var.
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", secrets.token_hex(32))
+# Secret key — use JWT_SECRET_KEY from env in production.
+# IMPORTANT: The fallback is a stable dev-only key. Using secrets.token_hex(32)
+# here would regenerate a new key on every server restart (especially with
+# --reload), instantly invalidating ALL active user sessions and causing logouts.
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "edunest_dev_jwt_secret_DO_NOT_USE_IN_PRODUCTION_2026")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60          # 1 hour
 REFRESH_TOKEN_EXPIRE_DAYS = 7             # 1 week

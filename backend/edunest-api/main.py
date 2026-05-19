@@ -560,83 +560,63 @@ def extract_pdf_text(file_data: bytes) -> str:
         raise RuntimeError(f"Failed to extract PDF text: {e}")
 
 
-async def get_gemini_embedding(text: str) -> list[float]:
-    """Get embedding from Gemini API."""
-    api_key = get_api_key()
-    embed_url = f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={api_key}"
-    payload = {
-        "model": "models/text-embedding-004",
-        "content": {"parts": [{"text": text}]}
-    }
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        resp = await client.post(embed_url, json=payload)
-        resp.raise_for_status()
-    result = resp.json()
-    return result["embedding"]["values"]
 
+# ── Session-Isolated Chunk Store ─────────────────────────────────────────────
+# Each chat session gets its own vector index and upload directory so that
+# uploading files in one session does not bleed into another.
 
-async def get_gemini_embeddings_batch(texts: list[str]) -> list[list[float]]:
-    """Get embeddings for a batch of texts (sequentially to avoid rate limits)."""
-    embeddings = []
-    for i, text in enumerate(texts):
-        try:
-            emb = await get_gemini_embedding(text)
-            embeddings.append(emb)
-        except Exception as e:
-            print(f"Embedding error for chunk {i}: {e}")
-            embeddings.append([0.0] * 768)  # fallback zero vector
-        # Small delay to avoid rate limits
-        if i > 0 and i % 5 == 0:
-            await asyncio.sleep(0.5)
-    return embeddings
+def _safe_session_id(session_id: str) -> str:
+    """Sanitize session_id for use as a filesystem path component."""
+    safe = "".join(c for c in session_id if c.isalnum() or c in ("-", "_")).strip()
+    return safe or "global"
 
+def _session_vector_file(session_id: str) -> str:
+    return os.path.join(DOUBT_INDEX_DIR, f"vectors_{_safe_session_id(session_id)}.json")
 
-def cosine_similarity(a: list[float], b: list[float]) -> float:
-    """Compute cosine similarity between two vectors."""
-    import math
-    dot = sum(x * y for x, y in zip(a, b))
-    norm_a = math.sqrt(sum(x * x for x in a))
-    norm_b = math.sqrt(sum(x * x for x in b))
-    if norm_a == 0 or norm_b == 0:
-        return 0.0
-    return dot / (norm_a * norm_b)
+def _session_upload_dir(session_id: str) -> str:
+    d = os.path.join(DOUBT_UPLOAD_DIR, _safe_session_id(session_id))
+    os.makedirs(d, exist_ok=True)
+    return d
 
+def load_vector_store(session_id: str = "global") -> dict:
+    """Load the chunk store from disk for a given session."""
+    vector_file = _session_vector_file(session_id)
+    if os.path.exists(vector_file):
+        with open(vector_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if "chunks" not in data:
+                data["chunks"] = []
+            if "metadata" not in data:
+                data["metadata"] = []
+            return data
+    return {"chunks": [], "metadata": []}
 
-# Simple vector store (JSON-based, no FAISS dependency required)
-VECTOR_STORE_FILE = os.path.join(DOUBT_INDEX_DIR, "vectors.json")
+def save_vector_store(store: dict, session_id: str = "global"):
+    """Save the chunk store to disk for a given session."""
+    vector_file = _session_vector_file(session_id)
+    clean = {"chunks": store.get("chunks", []), "metadata": store.get("metadata", [])}
+    with open(vector_file, "w", encoding="utf-8") as f:
+        json.dump(clean, f)
 
-def load_vector_store() -> dict:
-    """Load the vector store from disk."""
-    if os.path.exists(VECTOR_STORE_FILE):
-        with open(VECTOR_STORE_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {"chunks": [], "embeddings": [], "metadata": []}
-
-def save_vector_store(store: dict):
-    """Save the vector store to disk."""
-    with open(VECTOR_STORE_FILE, "w", encoding="utf-8") as f:
-        json.dump(store, f)
-
-
-def search_vectors(query_embedding: list[float], store: dict, top_k: int = 5) -> list[dict]:
-    """Search the vector store for the most similar chunks."""
+def get_all_context(store: dict, max_chars: int = 80000) -> tuple[str, list[str]]:
+    """Build a single context string from all stored chunks (up to max_chars).
+    Returns (context_text, list_of_source_names)."""
     if not store["chunks"]:
-        return []
-    
-    scores = []
-    for i, emb in enumerate(store["embeddings"]):
-        sim = cosine_similarity(query_embedding, emb)
-        scores.append((i, sim))
-    
-    scores.sort(key=lambda x: x[1], reverse=True)
-    results = []
-    for idx, score in scores[:top_k]:
-        results.append({
-            "chunk": store["chunks"][idx],
-            "score": score,
-            "metadata": store["metadata"][idx] if idx < len(store["metadata"]) else {}
-        })
-    return results
+        return "", []
+    context_parts = []
+    sources = set()
+    total = 0
+    for i, chunk in enumerate(store["chunks"]):
+        if total + len(chunk) > max_chars:
+            break
+        context_parts.append(chunk)
+        if i < len(store.get("metadata", [])):
+            src = store["metadata"][i].get("source", "")
+            if src:
+                sources.add(src)
+        total += len(chunk)
+    return "\n\n---\n\n".join(context_parts), list(sources)
+
 
 
 # Pydantic models for doubt solver
@@ -673,11 +653,14 @@ async def extract_text_from_image(file_data: bytes, mime_type: str) -> str:
 
 
 @app.post("/api/doubt-solver/upload")
-async def doubt_solver_upload(files: List[UploadFile] = File(...)):
+async def doubt_solver_upload(
+    files: List[UploadFile] = File(...),
+    session_id: str = "global",
+):
     """
-    Upload PDFs, documents, or images to the AI Doubt Solver.
+    Upload PDFs, documents, or images to the AI Chatbot.
     Extracts text (using OCR for images / handwritten notes), chunks it,
-    generates Gemini embeddings, and stores in a vector index.
+    and stores in a session-isolated chunk index.
     """
     if not files:
         raise HTTPException(status_code=400, detail="No files provided.")
@@ -685,6 +668,7 @@ async def doubt_solver_upload(files: List[UploadFile] = File(...)):
     all_chunks = []
     all_metadata = []
     saved_files = []
+    upload_dir = _session_upload_dir(session_id)
 
     try:
         for file in files:
@@ -722,8 +706,8 @@ async def doubt_solver_upload(files: List[UploadFile] = File(...)):
             if not text.strip():
                 continue
 
-            # Save file locally
-            save_path = os.path.join(DOUBT_UPLOAD_DIR, file.filename or "unknown")
+            # Save file to session-specific upload directory
+            save_path = os.path.join(upload_dir, file.filename or "unknown")
             with open(save_path, "wb") as f:
                 f.write(file_data)
             saved_files.append(file.filename)
@@ -737,16 +721,12 @@ async def doubt_solver_upload(files: List[UploadFile] = File(...)):
         if not all_chunks:
             raise HTTPException(status_code=400, detail="No readable text found in the uploaded files.")
 
-        # Generate embeddings
-        print(f"Generating embeddings for {len(all_chunks)} chunks...")
-        embeddings = await get_gemini_embeddings_batch(all_chunks)
-
-        # Load existing store and append
-        store = load_vector_store()
+        # Store chunks (no embedding model needed)
+        print(f"Storing {len(all_chunks)} chunks for session {session_id}...")
+        store = load_vector_store(session_id)
         store["chunks"].extend(all_chunks)
-        store["embeddings"].extend(embeddings)
         store["metadata"].extend(all_metadata)
-        save_vector_store(store)
+        save_vector_store(store, session_id)
 
         return {
             "message": f"Successfully processed {len(saved_files)} file(s).",
@@ -765,40 +745,28 @@ async def doubt_solver_upload(files: List[UploadFile] = File(...)):
 @app.post("/api/doubt-solver/chat", response_model=DoubtChatResponse)
 async def doubt_solver_chat(request: DoubtChatRequest):
     """
-    Chat with the AI Doubt Solver. Searches uploaded documents for context,
+    Chat with the AI Chatbot. Loads session-specific uploaded documents as context,
     then uses Gemini to generate an answer with conversational memory.
     """
     if not request.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
 
     try:
-        store = load_vector_store()
-        context_chunks = []
-        sources = []
-        
-        # Search for relevant context if documents are indexed
-        if store["chunks"]:
-            query_embedding = await get_gemini_embedding(request.question)
-            results = search_vectors(query_embedding, store, top_k=5)
-            context_chunks = [r["chunk"] for r in results if r["score"] > 0.3]
-            sources = list(set(
-                r["metadata"].get("source", "uploaded document") 
-                for r in results if r["score"] > 0.3
-            ))
-        
-        # Build chat history
         session_id = request.session_id
+        store = load_vector_store(session_id)
+        sources = []
+
+        # Get all stored context for this session
+        context_text, sources = get_all_context(store)
+        if context_text:
+            context_text = f"\n\nSTUDY MATERIAL CONTEXT:\n{context_text}\n"
+
+        # Build chat history
         if session_id not in _chat_sessions:
             _chat_sessions[session_id] = []
-        
+
         history = _chat_sessions[session_id]
-        
-        # Build the prompt
-        context_text = ""
-        if context_chunks:
-            context_text = "\n\n---\n\n".join(context_chunks)
-            context_text = f"\n\nRELEVANT CONTEXT FROM STUDY MATERIALS:\n{context_text}\n"
-        
+
         # Build conversation history string
         history_text = ""
         if history:
@@ -806,7 +774,7 @@ async def doubt_solver_chat(request: DoubtChatRequest):
             for msg in recent:
                 role = "Student" if msg["role"] == "user" else "Tutor"
                 history_text += f"{role}: {msg['content']}\n"
-        
+
         system_prompt = f"""You are EduNest AI Tutor — a brilliant, patient, and encouraging study companion. 
 Your role is to help students understand concepts from their uploaded study materials.
 
@@ -826,22 +794,22 @@ CONVERSATION HISTORY:
             {"text": system_prompt},
             {"text": f"Student's question: {request.question}"}
         ]
-        
+
         generation_config = {
             "temperature": 0.4,
             "maxOutputTokens": 2048,
         }
-        
+
         answer = await call_gemini(parts, generation_config)
-        
+
         # Update session history
         history.append({"role": "user", "content": request.question})
         history.append({"role": "assistant", "content": answer})
-        
+
         # Keep history manageable
         if len(history) > 40:
             _chat_sessions[session_id] = history[-30:]
-        
+
         return DoubtChatResponse(answer=answer, sources=sources)
 
     except Exception as e:
@@ -851,29 +819,34 @@ CONVERSATION HISTORY:
 
 @app.delete("/api/doubt-solver/clear")
 async def doubt_solver_clear(session_id: str = ""):
-    """Clear the vector store and/or chat history."""
+    """Clear the vector store and/or chat history for a specific session."""
     if session_id and session_id in _chat_sessions:
         del _chat_sessions[session_id]
-    
-    # Clear vector store
-    store = {"chunks": [], "embeddings": [], "metadata": []}
-    save_vector_store(store)
-    
-    # Clear uploaded files
-    import glob
-    for f in glob.glob(os.path.join(DOUBT_UPLOAD_DIR, "*")):
+
+    # Delete session vector store file
+    vector_file = _session_vector_file(session_id or "global")
+    if os.path.exists(vector_file):
         try:
-            os.remove(f)
-        except:
-            pass
-    
-    return {"message": "Doubt solver data cleared successfully."}
+            os.remove(vector_file)
+        except Exception as e:
+            print(f"Error removing vector file: {e}")
+
+    # Delete session-specific uploaded files
+    import shutil
+    session_dir = os.path.join(DOUBT_UPLOAD_DIR, _safe_session_id(session_id or "global"))
+    if os.path.exists(session_dir):
+        try:
+            shutil.rmtree(session_dir)
+        except Exception as e:
+            print(f"Error removing session upload dir: {e}")
+
+    return {"message": "Chatbot data cleared successfully."}
 
 
 @app.get("/api/doubt-solver/status")
-async def doubt_solver_status():
-    """Check if documents are uploaded and indexed."""
-    store = load_vector_store()
+async def doubt_solver_status(session_id: str = "global"):
+    """Check if documents are uploaded and indexed for a session."""
+    store = load_vector_store(session_id)
     return {
         "has_documents": len(store["chunks"]) > 0,
         "total_chunks": len(store["chunks"]),
