@@ -102,7 +102,16 @@ export default function App() {
   const [quizHistory, setQuizHistory] = useState(() => {
     try { return JSON.parse(localStorage.getItem('edunest_quiz_history') || '[]'); } catch { return []; }
   });
+  // Cooldown counter (seconds) after a 429 rate-limit error
+  const [rateLimitCooldown, setRateLimitCooldown] = useState(0);
   const mainContainerRef = useRef(null);
+
+  // Tick the cooldown counter down every second
+  useEffect(() => {
+    if (rateLimitCooldown <= 0) return;
+    const timer = setTimeout(() => setRateLimitCooldown(c => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [rateLimitCooldown]);
 
   // Global Network Status
   useEffect(() => {
@@ -324,6 +333,17 @@ export default function App() {
 
       if (!response.ok) {
         const errorText = await response.text();
+        // Surface a clear message for quota (429) and overload (503) directly from status code
+        if (response.status === 429) {
+          let msg = 'API RATE LIMIT: Gemini free-tier quota exceeded. Please wait ~60 seconds and try again.';
+          try { const j = JSON.parse(errorText); if (j.detail) msg = `RATE LIMIT: ${j.detail}`; } catch {}
+          throw new Error(msg);
+        }
+        if (response.status === 503) {
+          let msg = 'API OVERLOADED: Gemini servers are busy. Please wait a few seconds and retry.';
+          try { const j = JSON.parse(errorText); if (j.detail) msg = `OVERLOADED: ${j.detail}`; } catch {}
+          throw new Error(msg);
+        }
         throw new Error(`Server Status: ${response.status}\nMessage: ${errorText}`);
       }
 
@@ -340,8 +360,15 @@ export default function App() {
         setUploadError("Request timed out after 60 seconds. Google's servers might be overloaded right now.");
       } else if (error.message === 'Failed to fetch') {
         setUploadError('BACKEND OFFLINE: Please ensure the FastAPI server is running on port 8000');
+      } else if (error.message?.startsWith('RATE LIMIT') || error.message?.startsWith('API RATE LIMIT')) {
+        setUploadError(error.message);
+        setRateLimitCooldown(60); // start 60-second cooldown
+      } else if (error.message?.startsWith('OVERLOADED') || error.message?.startsWith('API OVERLOADED')) {
+        setUploadError(error.message);
       } else if (error.message?.includes('429')) {
+        // Fallback: old-style 429 in message string
         setUploadError('API BUSY: Gemini free tier limit reached. Please wait 60 seconds and try again.');
+        setRateLimitCooldown(60);
       } else if (error.message?.includes('500')) {
         try {
           const jsonStr = error.message.split('Message: ')[1];
@@ -590,6 +617,7 @@ export default function App() {
               handleGenerateBase={handleGenerateBase}
               onBack={() => setView('landing')}
               isOffline={isOffline}
+              rateLimitCooldown={rateLimitCooldown}
             />
           </div>
         )}

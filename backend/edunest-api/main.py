@@ -121,7 +121,8 @@ async def call_gemini(parts: list, generation_config: dict) -> str:
     """
     Calls the Gemini REST API directly via httpx with a 5-minute timeout.
     Re-reads the API key from .env on every call — swap the key anytime without restart.
-    Auto-retries on 503 (server overloaded) and 429 (rate limit) with backoff.
+    Auto-retries on 503 (server overloaded) and 429 (rate limit) with exponential backoff.
+    Raises HTTP 429 HTTPException on quota exhaustion so the frontend receives a clean error.
     """
     api_key = get_api_key()  # ← fresh key read on every request
     payload = {
@@ -129,7 +130,11 @@ async def call_gemini(parts: list, generation_config: dict) -> str:
         "generationConfig": generation_config,
     }
 
+    # Retry delays for 429/503: 20s on first retry, 45s on second
+    # These are longer than before because 2.5-flash-lite has tighter per-minute limits.
+    retry_delays = [20, 45]
     max_attempts = 3
+
     for attempt in range(max_attempts):
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
@@ -137,16 +142,41 @@ async def call_gemini(parts: list, generation_config: dict) -> str:
                 json=payload,
             )
 
+        # 503 — Google server overloaded
         if response.status_code == 503:
-            wait = 10  # fixed 10s wait — exponential was burning the frontend's 2-min budget
+            wait = retry_delays[min(attempt, len(retry_delays) - 1)]
             print(f"503 overloaded — retrying in {wait}s (attempt {attempt+1}/{max_attempts})...")
             if attempt < max_attempts - 1:
                 await asyncio.sleep(wait)
                 continue
-            else:
-                response.raise_for_status()
+            raise HTTPException(
+                status_code=503,
+                detail="Gemini API is overloaded right now. Please wait a few seconds and try again."
+            )
 
-        # REMOVED 429 retries. Fail fast if quota is exceeded.
+        # 429 — rate limit / quota exceeded
+        if response.status_code == 429:
+            # Honour Retry-After header if Google sends one, else use our default
+            retry_after_hdr = response.headers.get("Retry-After", "")
+            try:
+                wait = int(retry_after_hdr)
+            except (ValueError, TypeError):
+                wait = retry_delays[min(attempt, len(retry_delays) - 1)]
+            print(f"429 rate-limited — retrying in {wait}s (attempt {attempt+1}/{max_attempts})...")
+            if attempt < max_attempts - 1:
+                await asyncio.sleep(wait)
+                continue
+            # All retries exhausted — tell the frontend exactly what happened
+            raise HTTPException(
+                status_code=429,
+                detail=(
+                    "Gemini API rate limit hit. "
+                    "gemini-2.5-flash-lite has a low free-tier quota. "
+                    "Please wait 60 seconds and try again, or reduce your file size."
+                )
+            )
+
+        # All other errors (400, 500, etc.) — raise immediately
         response.raise_for_status()
         break
 
@@ -216,20 +246,29 @@ def extract_text_from_pptx(data: bytes) -> str:
 
 
 def encode_file(data: bytes, mime_type: str) -> dict:
-    """Encodes raw file bytes as a Gemini inlineData part, compressing images to prevent hanging payloads."""
+    """
+    Encodes raw file bytes as a Gemini inlineData part.
+    Images are aggressively compressed to 512x512 / JPEG-55 to minimise token
+    usage — the #1 cause of 429 quota exhaustion on 2.5-flash-lite's free tier.
+    """
     if mime_type.startswith("image/"):
         try:
             img = Image.open(io.BytesIO(data))
             if img.mode in ("RGBA", "P"):
                 img = img.convert("RGB")
-            # Downscale large screenshots to max 1024x1024
-            img.thumbnail((1024, 1024))
-            
-            # Save as compressed JPEG
+            # Keep max dimension at 512 px — still legible for text/equations,
+            # but uses ~4× fewer tokens than 1024 px.
+            img.thumbnail((512, 512))
+
             output = io.BytesIO()
-            img.save(output, format="JPEG", quality=70)
-            data = output.getvalue()
+            img.save(output, format="JPEG", quality=55)
+            compressed = output.getvalue()
+
+            # Safety: never use a compressed image larger than the original
+            if len(compressed) < len(data):
+                data = compressed
             mime_type = "image/jpeg"
+            print(f"Image compressed to {len(data)//1024} KB")
         except Exception as e:
             print(f"Warning: Failed to compress image: {e}")
 
@@ -314,11 +353,9 @@ async def generate_study_material(
                 print(f"Study material attempt {attempt + 1}/{max_retries}...")
                 raw_response = await call_gemini(parts, generation_config)
                 break
-            except httpx.HTTPStatusError as e:
-                status = e.response.status_code
-                body = e.response.text
-                print(f"Gemini API error {status}: {body}")
-                raise RuntimeError(f"Gemini API returned {status}: {body}") from e
+            except HTTPException:
+                # Propagate clean 429/503 from call_gemini directly to the client
+                raise
             except httpx.TimeoutException as e:
                 print(f"Timeout on attempt {attempt + 1}: {e}")
                 if attempt < max_retries - 1:
@@ -334,6 +371,8 @@ async def generate_study_material(
             "flashcards":  data.get("flashcards", []),
         }
 
+    except HTTPException:
+        raise  # pass 429/503 straight through
     except Exception as e:
         traceback.print_exc()
         print(f"STUDY MATERIAL ERROR: {e}")
@@ -435,6 +474,15 @@ async def generate_quiz(
                         print(f"  Added {len(batch_data['mcqs'])} questions.")
                         batch_success = True
                         break
+                except HTTPException as e:
+                    # 429 / 503 raised by call_gemini — retry with backoff
+                    print(f"  Batch {i+1} HTTP {e.status_code} on attempt {attempt+1}: {e.detail}")
+                    if e.status_code in (429, 503) and attempt < 2:
+                        wait = 30 if e.status_code == 429 else 10
+                        print(f"  Waiting {wait}s before retry...")
+                        await asyncio.sleep(wait)
+                    else:
+                        print(f"  Batch {i+1} failed permanently.")
                 except httpx.HTTPStatusError as e:
                     status = e.response.status_code
                     print(f"  Batch {i+1} API error {status} on attempt {attempt+1}")
@@ -812,6 +860,8 @@ CONVERSATION HISTORY:
 
         return DoubtChatResponse(answer=answer, sources=sources)
 
+    except HTTPException:
+        raise  # propagate 429/503 from call_gemini directly
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
@@ -937,8 +987,8 @@ async def regenerate_section(
         elif section_type == "flashcards":
             return {"section": "flashcards", "data": data.get("flashcards", [])}
 
-    except HTTPException as he:
-        raise he
+    except HTTPException:
+        raise  # propagate 429/503 from call_gemini directly
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Regeneration error: {str(e)}")

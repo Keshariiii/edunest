@@ -7,6 +7,13 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
   const [quizConfig, setQuizConfig] = useState({ examType: 'JEE Main', difficulty: 'Medium', numQuestions: 10 });
   const [quizData, setQuizData] = useState(() => {
     try {
+      // If the quiz was already completed, don't reload it — show config screen
+      const finished = localStorage.getItem('edunest_quiz_finished') === 'true';
+      if (finished) {
+        localStorage.removeItem('edunest_cached_quiz');
+        localStorage.removeItem('edunest_quiz_finished');
+        return null;
+      }
       const cached = localStorage.getItem('edunest_cached_quiz');
       return cached ? JSON.parse(cached) : null;
     } catch { return null; }
@@ -82,8 +89,11 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
         setTimeout(() => {
           setQuizData(finalData);
           setIsCachedQuiz(false);
-          // Persist quiz for offline access
-          try { localStorage.setItem('edunest_cached_quiz', JSON.stringify(finalData)); } catch {}
+          // Persist quiz for offline access & clear any old finished flag
+          try {
+            localStorage.setItem('edunest_cached_quiz', JSON.stringify(finalData));
+            localStorage.removeItem('edunest_quiz_finished');
+          } catch {}
           setSubmittedAnswers({}); setSelectedOptions({}); setQuestionTimes({}); setIsQuizFinished(false); setCurrentMcqIndex(0);
           setIsReviewMode(false);
           setIsQuizGenerating(false);
@@ -143,6 +153,8 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
   // Fire confetti + notify parent when quiz finishes
   const handleQuizFinish = useCallback(() => {
     setIsQuizFinished(true);
+    // Persist finished state so switching tabs won't re-show old quiz questions
+    try { localStorage.setItem('edunest_quiz_finished', 'true'); } catch {}
     const stats = getQuizStats();
     if (stats && stats.accuracy >= 80) {
       confetti({ particleCount: 160, spread: 90, origin: { y: 0.6 }, colors: ['#6366f1', '#a78bfa', '#38bdf8', '#ffffff'] });
@@ -558,7 +570,10 @@ const QuizTab = ({ files, subject, isFullscreen, toggleFullscreen, mainContainer
                     // switching tabs and returning does not reload the old quiz.
                     setQuizData(null);
                     setIsCachedQuiz(false);
-                    try { localStorage.removeItem('edunest_cached_quiz'); } catch {}
+                    try {
+                      localStorage.removeItem('edunest_cached_quiz');
+                      localStorage.removeItem('edunest_quiz_finished');
+                    } catch {}
                     if (isFullscreen) toggleFullscreen();
                     setIsReviewMode(false);
                     setShowAnalytics(false);

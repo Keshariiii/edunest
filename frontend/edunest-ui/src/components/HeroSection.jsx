@@ -62,6 +62,7 @@ const HeroSection = ({
   loading,
   handleGenerateBase,
   isOffline = false,
+  rateLimitCooldown = 0,
 }) => {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-6 duration-500">
@@ -178,21 +179,43 @@ const HeroSection = ({
             </div>
           )}
 
+          {/* Rate-limit cooldown bar */}
+          {rateLimitCooldown > 0 && (
+            <div className="w-full mb-3">
+              <div className="flex justify-between items-center mb-1">
+                <span className="font-mono text-[10px] text-amber-400">API cooling down — auto-retry in {rateLimitCooldown}s</span>
+                <span className="font-mono text-[10px] text-gray-500">{rateLimitCooldown}/60s</span>
+              </div>
+              <div className="w-full h-1 bg-gray-200 dark:bg-[#262626] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-amber-400 rounded-full transition-all duration-1000"
+                  style={{ width: `${(rateLimitCooldown / 60) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Submit / Loading */}
           {loading ? (
             <ProcessingState />
           ) : (
             <button
               onClick={handleGenerateBase}
-              disabled={loading || isOffline}
+              disabled={loading || isOffline || rateLimitCooldown > 0}
               className={`w-full py-3 rounded-xl font-semibold text-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 group shadow-sm ${
-                isOffline 
-                  ? 'bg-gray-200 dark:bg-[#1a1a1a] text-gray-400 dark:text-gray-600 cursor-not-allowed' 
+                isOffline || rateLimitCooldown > 0
+                  ? 'bg-gray-200 dark:bg-[#1a1a1a] text-gray-400 dark:text-gray-600 cursor-not-allowed'
                   : 'bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100'
               }`}
             >
-              {isOffline ? 'Offline — Check Connection' : 'Initialize Processing'}
-              {!isOffline && <span className="font-mono text-xs bg-gray-700 dark:bg-gray-200 text-gray-200 dark:text-gray-800 px-1.5 py-0.5 rounded group-hover:bg-gray-600 dark:group-hover:bg-gray-300 transition-colors">⏎</span>}
+              {isOffline
+                ? 'Offline — Check Connection'
+                : rateLimitCooldown > 0
+                  ? `⏳ Retry in ${rateLimitCooldown}s`
+                  : 'Initialize Processing'}
+              {!isOffline && rateLimitCooldown === 0 && (
+                <span className="font-mono text-xs bg-gray-700 dark:bg-gray-200 text-gray-200 dark:text-gray-800 px-1.5 py-0.5 rounded group-hover:bg-gray-600 dark:group-hover:bg-gray-300 transition-colors">⏎</span>
+              )}
             </button>
           )}
         </div>
