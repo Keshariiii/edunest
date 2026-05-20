@@ -137,13 +137,15 @@ const Navbar = ({
         <div className="flex items-center gap-2 text-sm font-mono">
 
           {/* Back Button */}
-          {(showAnalytics || view === 'profile' || view === 'app') && (
+          {(showAnalytics || view === 'profile' || view === 'app' || view === 'study_timer') && (
             <button
               onClick={() => {
                 if (showAnalytics) {
                   setShowAnalytics(false);
                 } else if (view === 'profile') {
                   setView(user ? 'dashboard' : 'landing');
+                } else if (view === 'study_timer') {
+                  setView('dashboard');
                 } else if (view === 'app') {
                   if (results !== null) {
                     setResults(null); setFiles([]); setSubject('');

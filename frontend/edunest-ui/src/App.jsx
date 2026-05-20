@@ -15,6 +15,7 @@ import UserProfile from './components/UserProfile';
 import OfflinePage from './components/OfflinePage';
 import Dashboard from './components/Dashboard';
 import DoubtSolver from './components/DoubtSolver';
+import StudyTimer from './components/StudyTimer';
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
@@ -415,6 +416,7 @@ export default function App() {
   const isProfileView = view === 'profile';
   const isDashboardView = view === 'dashboard';
   const isDoubtSolverView = view === 'doubt_solver';
+  const isStudyTimerView = view === 'study_timer';
   const isWorkshopView = view === 'app';
   const inResults = results !== null;
 
@@ -592,12 +594,18 @@ export default function App() {
             user={user} 
             onOpenWorkshop={() => setView('app')}
             onOpenDoubtSolver={() => setView('doubt_solver')}
+            onOpenStudyTimer={() => setView('study_timer')}
           />
         )}
 
         {/* ── AI CHATBOT ────────────────────────────────────────────── */}
         {isDoubtSolverView && !isFullscreen && !showAnalytics && (
           <DoubtSolver onBack={() => setView('dashboard')} />
+        )}
+
+        {/* ── STUDY TIMER ────────────────────────────────────────────── */}
+        {isStudyTimerView && !isFullscreen && !showAnalytics && (
+          <StudyTimer onBack={() => setView('dashboard')} />
         )}
 
         {/* ── WORKSPACE (Upload Tool) ───────────────────────────────────── */}

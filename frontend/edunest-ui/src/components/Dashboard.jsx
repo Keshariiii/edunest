@@ -1,7 +1,7 @@
 import React from 'react';
-import { BookOpen, BrainCircuit, Calendar, LineChart, Sparkles, ArrowRight, Lock } from 'lucide-react';
+import { BookOpen, BrainCircuit, Timer, LineChart, Sparkles, ArrowRight, Lock } from 'lucide-react';
 
-export default function Dashboard({ user, onOpenWorkshop, onOpenDoubtSolver }) {
+export default function Dashboard({ user, onOpenWorkshop, onOpenDoubtSolver, onOpenStudyTimer }) {
   const firstName = user?.username || 'Student';
 
   const features = [
@@ -26,13 +26,14 @@ export default function Dashboard({ user, onOpenWorkshop, onOpenDoubtSolver }) {
       status: 'active'
     },
     {
-      id: 'study_planner',
-      title: 'Smart Study Planner',
-      description: 'Generate an optimized study schedule based on your exams and topic difficulty.',
-      icon: <Calendar className="w-6 h-6 text-amber-500 dark:text-amber-400" />,
+      id: 'study_timer',
+      title: 'Study Timer',
+      description: 'Track focus sessions, set intervals, and optimize your study flow with an interactive stopwatch and countdown timer.',
+      icon: <Timer className="w-6 h-6 text-amber-500 dark:text-amber-400" />,
       color: 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20',
-      action: null,
-      status: 'coming_soon'
+      action: onOpenStudyTimer,
+      actionText: 'Open Study Timer',
+      status: 'active'
     },
     {
       id: 'analytics',
