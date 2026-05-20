@@ -420,7 +420,7 @@ export default function App() {
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className={`flex flex-col bg-[#fafafa] dark:bg-[#0a0a0a] text-gray-800 dark:text-gray-100 font-sans selection:bg-indigo-500/30 transition-colors duration-300 ease-in-out ${(inResults || isFullscreen) ? 'h-screen overflow-hidden print:h-auto print:overflow-visible' : 'min-h-screen'}`}>
+    <div className={`flex flex-col bg-[#fafafa] dark:bg-[#0a0a0a] text-gray-800 dark:text-gray-100 font-sans selection:bg-indigo-500/30 transition-colors duration-300 ease-in-out ${((isWorkshopView && inResults) || isFullscreen) ? 'h-screen overflow-hidden print:h-auto print:overflow-visible' : 'min-h-screen'}`}>
 
       {/* ── FULL-SCREEN AUTH LOADING (token check in progress) ─────────── */}
       {view === 'loading' && <AppLoading message="Restoring your workspace" detail="Verifying your session…" />}
@@ -540,7 +540,7 @@ export default function App() {
       {/* ── MAIN CONTENT ──────────────────────────────────────────────────── */}
       <main
         ref={mainContainerRef}
-        className={`relative z-10 w-full print:overflow-visible print:block print:h-auto ${(inResults || isFullscreen) ? 'flex-1 overflow-y-auto' : ''} ${isFullscreen ? 'fixed inset-x-0 bottom-0 top-[56px] z-40 bg-[#fafafa] dark:bg-[#0a0a0a]' : (inResults ? 'pt-8 pb-8' : '')}`}
+        className={`relative z-10 w-full print:overflow-visible print:block print:h-auto ${((isWorkshopView && inResults) || isFullscreen) ? 'flex-1 overflow-y-auto' : ''} ${isFullscreen ? 'fixed inset-x-0 bottom-0 top-[56px] z-40 bg-[#fafafa] dark:bg-[#0a0a0a]' : ((isWorkshopView && inResults) ? 'pt-8 pb-8' : '')}`}
       >
 
         {/* ── ANALYTICS PANEL ───────────────────────────────────────────── */}
@@ -555,7 +555,7 @@ export default function App() {
         )}
 
         {/* ── LANDING PAGE ──────────────────────────────────────────────── */}
-        {isLandingView && !inResults && !showAnalytics && (
+        {isLandingView && !showAnalytics && (
           isOffline
             ? <OfflinePage onRetry={() => window.location.reload()} />
             : <LandingPage onGetStarted={() => {
@@ -587,7 +587,7 @@ export default function App() {
         )}
 
         {/* ── DASHBOARD ─────────────────────────────────────────────────── */}
-        {isDashboardView && !inResults && !isFullscreen && !showAnalytics && (
+        {isDashboardView && !isFullscreen && !showAnalytics && (
           <Dashboard 
             user={user} 
             onOpenWorkshop={() => setView('app')}
@@ -596,7 +596,7 @@ export default function App() {
         )}
 
         {/* ── AI CHATBOT ────────────────────────────────────────────── */}
-        {isDoubtSolverView && !inResults && !isFullscreen && !showAnalytics && (
+        {isDoubtSolverView && !isFullscreen && !showAnalytics && (
           <DoubtSolver onBack={() => setView('dashboard')} />
         )}
 
@@ -623,7 +623,7 @@ export default function App() {
         )}
 
         {/* ── RESULTS (Study Material) ─────────────────────────────────── */}
-        {inResults && (
+        {isWorkshopView && inResults && (
           <div className="mx-auto w-full max-w-7xl px-3 sm:px-6">
             <ErrorBoundary>
               <div className="mt-8 md:mt-10 transition-all duration-300">

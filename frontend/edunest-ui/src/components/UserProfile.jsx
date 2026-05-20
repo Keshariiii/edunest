@@ -1,6 +1,6 @@
 /* eslint-disable */
-import React, { useState, useEffect, useCallback } from 'react';
-import { User, Mail, Calendar, Lock, LogOut, Edit3, Check, X, Loader2, AlertCircle, Shield, ArrowLeft, Flame, Zap } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { User, Mail, Calendar, Lock, LogOut, Edit3, Check, X, Loader2, AlertCircle, Shield, ArrowLeft, Flame, Zap, Hourglass, Target, Trash2 } from 'lucide-react';
 
 // ─── Activity Streak Hook (converted from activity.js) ─────────────────────
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -90,6 +90,307 @@ function ActivityStreak() {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// ─── Exam Countdown Component ───────────────────────────────────────────────
+const EXAM_OPTIONS = [
+  { value: 'JEE Main',     color: 'indigo', icon: '⚡' },
+  { value: 'JEE Advanced', color: 'purple', icon: '🔬' },
+  { value: 'NEET',         color: 'emerald', icon: '🧬' },
+];
+
+function ExamCountdown() {
+  const [examName, setExamName] = useState(() => localStorage.getItem('edunest_target_exam') || '');
+  const [examDate, setExamDate] = useState(() => localStorage.getItem('edunest_exam_date') || '');
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftExam, setDraftExam] = useState('');
+  const [draftDate, setDraftDate] = useState('');
+  const [remaining, setRemaining] = useState({ days: 0, hours: 0, mins: 0, secs: 0, total: 0 });
+  // Calendar navigation state (must be top-level hooks)
+  const [viewYear, setViewYear] = useState(new Date().getFullYear());
+  const [viewMonth, setViewMonth] = useState(new Date().getMonth());
+
+  // Live ticker — updates every second
+  useEffect(() => {
+    if (!examDate) return;
+    const tick = () => {
+      const diff = new Date(examDate).getTime() - Date.now();
+      if (diff <= 0) {
+        setRemaining({ days: 0, hours: 0, mins: 0, secs: 0, total: 0 });
+        return;
+      }
+      setRemaining({
+        days:  Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        mins:  Math.floor((diff / (1000 * 60)) % 60),
+        secs:  Math.floor((diff / 1000) % 60),
+        total: diff,
+      });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [examDate]);
+
+  const handleSave = () => {
+    if (!draftExam || !draftDate) return;
+    setExamName(draftExam);
+    setExamDate(draftDate);
+    localStorage.setItem('edunest_target_exam', draftExam);
+    localStorage.setItem('edunest_exam_date', draftDate);
+    setIsEditing(false);
+  };
+
+  const handleClear = () => {
+    setExamName('');
+    setExamDate('');
+    localStorage.removeItem('edunest_target_exam');
+    localStorage.removeItem('edunest_exam_date');
+    setIsEditing(false);
+  };
+
+  const openEdit = () => {
+    setDraftExam(examName || EXAM_OPTIONS[0].value);
+    setDraftDate(examDate || '');
+    // Sync calendar view to the saved date or today
+    const ref = examDate ? new Date(examDate + 'T00:00:00') : new Date();
+    setViewYear(ref.getFullYear());
+    setViewMonth(ref.getMonth());
+    setIsEditing(true);
+  };
+
+  const examMeta = EXAM_OPTIONS.find(e => e.value === examName);
+  const isPast = remaining.total <= 0 && examDate;
+
+
+  return (
+    <div className="pt-4 border-t border-gray-100 dark:border-[#1e1e1e]">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+          <Hourglass size={12} className="text-indigo-500" /> Exam Countdown
+        </h4>
+        {examName && !isEditing && (
+          <button onClick={openEdit} className="p-1 rounded text-gray-400 hover:text-indigo-500 transition-colors">
+            <Edit3 size={11} />
+          </button>
+        )}
+      </div>
+
+      {isEditing ? (
+        /* ── Edit Mode ──────────────────────────────────────────── */
+        <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {/* Exam selector chips */}
+          <div className="flex flex-wrap gap-2">
+            {EXAM_OPTIONS.map(({ value, icon }) => (
+              <button
+                key={value}
+                onClick={() => setDraftExam(value)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold transition-all duration-200 ${
+                  draftExam === value
+                    ? 'border-indigo-500/50 bg-indigo-500/10 text-indigo-300 shadow-[0_0_12px_rgba(99,102,241,0.12)]'
+                    : 'border-gray-200 dark:border-[#262626] bg-gray-50 dark:bg-[#111] text-gray-500 dark:text-gray-400 hover:border-gray-400 dark:hover:border-[#444]'
+                }`}
+              >
+                <span>{icon}</span> {value}
+              </button>
+            ))}
+          </div>
+
+          {/* Custom Calendar Picker */}
+          {(() => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const sel = draftDate ? new Date(draftDate + 'T00:00:00') : null;
+
+            const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            const WDAYS = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+
+            const firstDay = new Date(viewYear, viewMonth, 1);
+            const startDay = (firstDay.getDay() + 6) % 7; // Mon=0
+            const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+            const cells = [];
+            for (let i = 0; i < startDay; i++) cells.push(null);
+            for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+            const prevMonth = () => {
+              if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
+              else setViewMonth(m => m - 1);
+            };
+            const nextMonth = () => {
+              if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
+              else setViewMonth(m => m + 1);
+            };
+
+            const canGoPrev = new Date(viewYear, viewMonth, 1) > new Date(today.getFullYear(), today.getMonth(), 1);
+
+            const selectDay = (d) => {
+              const dateObj = new Date(viewYear, viewMonth, d);
+              if (dateObj < today) return;
+              const yyyy = viewYear;
+              const mm = String(viewMonth + 1).padStart(2, '0');
+              const dd = String(d).padStart(2, '0');
+              setDraftDate(`${yyyy}-${mm}-${dd}`);
+            };
+
+            return (
+              <div className="rounded-xl border border-gray-200 dark:border-[#262626] bg-gray-50 dark:bg-[#0a0a0a] overflow-hidden">
+                {/* Month/Year header */}
+                <div className="flex items-center justify-between px-3 py-2.5 bg-white dark:bg-[#111] border-b border-gray-200 dark:border-[#1e1e1e]">
+                  <button
+                    type="button"
+                    onClick={prevMonth}
+                    disabled={!canGoPrev}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-[#1a1a1a] hover:text-gray-900 dark:hover:text-white transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                  >
+                    ‹
+                  </button>
+                  <span className="text-xs font-bold text-gray-900 dark:text-white tracking-wide">
+                    {MONTHS[viewMonth]} {viewYear}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={nextMonth}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-[#1a1a1a] hover:text-gray-900 dark:hover:text-white transition-all"
+                  >
+                    ›
+                  </button>
+                </div>
+
+                <div className="p-2.5">
+                  {/* Day-of-week headers */}
+                  <div className="grid grid-cols-7 gap-1 mb-1">
+                    {WDAYS.map(d => (
+                      <div key={d} className="text-center text-[9px] font-mono font-bold text-gray-400 dark:text-gray-600 uppercase py-1">{d}</div>
+                    ))}
+                  </div>
+
+                  {/* Day cells */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {cells.map((day, i) => {
+                      if (day === null) return <div key={`e-${i}`} />;
+
+                      const dateObj = new Date(viewYear, viewMonth, day);
+                      const isPast = dateObj < today;
+                      const isToday = dateObj.getTime() === today.getTime();
+                      const isSelected = sel && dateObj.getTime() === sel.getTime();
+
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          disabled={isPast}
+                          onClick={() => selectDay(day)}
+                          className={`
+                            w-full aspect-square rounded-lg flex items-center justify-center
+                            font-mono text-[11px] font-semibold transition-all duration-200
+                            ${isPast
+                              ? 'text-gray-300 dark:text-gray-700 cursor-not-allowed'
+                              : isSelected
+                                ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 scale-110'
+                                : isToday
+                                  ? 'bg-white dark:bg-[#1a1a1a] text-indigo-500 ring-2 ring-indigo-500/40 font-bold'
+                                  : 'text-gray-700 dark:text-gray-300 hover:bg-indigo-500/10 hover:text-indigo-400 cursor-pointer'
+                            }
+                          `}
+                        >
+                          {day}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Selected date footer */}
+                {draftDate && (
+                  <div className="px-3 py-2 border-t border-gray-200 dark:border-[#1e1e1e] bg-white dark:bg-[#111] flex items-center justify-between">
+                    <span className="text-[10px] font-mono text-gray-500">Selected</span>
+                    <span className="text-xs font-bold text-indigo-500 font-mono">
+                      {new Date(draftDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Actions */}
+          <div className="flex gap-2">
+            <button
+              onClick={handleSave}
+              disabled={!draftExam || !draftDate}
+              className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-500 transition-colors disabled:opacity-40 flex items-center gap-1.5"
+            >
+              <Check size={12} /> Save
+            </button>
+            <button
+              onClick={() => setIsEditing(false)}
+              className="px-4 py-2 bg-gray-100 dark:bg-[#1a1a1a] text-gray-600 dark:text-gray-400 text-xs font-bold rounded-lg hover:bg-gray-200 dark:hover:bg-[#222] transition-colors"
+            >
+              Cancel
+            </button>
+            {examName && (
+              <button
+                onClick={handleClear}
+                className="ml-auto px-3 py-2 text-red-500 text-xs font-mono hover:text-red-400 transition-colors flex items-center gap-1"
+              >
+                <Trash2 size={11} /> Remove
+              </button>
+            )}
+          </div>
+        </div>
+      ) : examName && examDate ? (
+        /* ── Display Mode ───────────────────────────────────────── */
+        <div className="animate-in fade-in duration-300">
+          {/* Exam label */}
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-base">{examMeta?.icon || '📝'}</span>
+            <span className="text-sm font-bold text-gray-900 dark:text-white">{examName}</span>
+            <span className="text-[10px] font-mono text-gray-500 ml-auto">
+              {new Date(examDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </span>
+          </div>
+
+          {isPast ? (
+            /* Exam day passed */
+            <div className="text-center py-4 px-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+              <p className="text-emerald-500 font-bold text-sm">🎉 Exam day has arrived!</p>
+              <p className="text-[10px] font-mono text-gray-500 mt-1">All the best! You've got this.</p>
+            </div>
+          ) : (
+            /* Countdown grid */
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { label: 'Days',  value: remaining.days,  accent: 'text-indigo-500 dark:text-indigo-400' },
+                { label: 'Hours', value: remaining.hours, accent: 'text-purple-500 dark:text-purple-400' },
+                { label: 'Mins',  value: remaining.mins,  accent: 'text-sky-500 dark:text-sky-400' },
+                { label: 'Secs',  value: remaining.secs,  accent: 'text-amber-500 dark:text-amber-400' },
+              ].map(({ label, value, accent }) => (
+                <div
+                  key={label}
+                  className="flex flex-col items-center py-3 px-2 rounded-xl bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#1e1e1e]"
+                >
+                  <span className={`text-2xl font-black font-mono tabular-nums leading-none ${accent}`}>
+                    {String(value).padStart(2, '0')}
+                  </span>
+                  <span className="text-[9px] font-mono text-gray-400 mt-1 uppercase tracking-widest">{label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* ── No exam set ────────────────────────────────────────── */
+        <button
+          onClick={openEdit}
+          className="w-full py-3 rounded-xl border border-dashed border-gray-300 dark:border-[#333] text-gray-500 dark:text-gray-400 text-xs font-mono hover:border-indigo-400 dark:hover:border-indigo-500/50 hover:text-indigo-500 dark:hover:text-indigo-400 transition-all flex items-center justify-center gap-2"
+        >
+          <Target size={13} /> Set your target exam date
+        </button>
+      )}
     </div>
   );
 }
@@ -285,6 +586,9 @@ export default function UserProfile({ user, token, onLogout, onUserUpdate, onBac
 
         {/* Activity Streak */}
         <ActivityStreak />
+
+        {/* Exam Countdown */}
+        <ExamCountdown />
 
         {/* Change Password */}
         <div className="pt-3 border-t border-gray-100 dark:border-[#1e1e1e]">
