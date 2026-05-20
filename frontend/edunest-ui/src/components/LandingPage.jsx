@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   GraduationCap, Sparkles, Zap, ArrowRight, UploadCloud,
   Calculator, FileText, Layers, BrainCircuit,
-  CheckCircle, Lock, Clock, Cpu, Github, Twitter
+  CheckCircle, Lock, Clock, Cpu, Github
 } from 'lucide-react';
 
 // ─── Animation helpers ────────────────────────────────────────────────────────
@@ -192,10 +192,7 @@ const LandingPage = ({ onGetStarted }) => {
             </p>
             
             <div className="flex items-center gap-4">
-              <a href="https://x.com/kesharinaman79" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] flex items-center justify-center text-gray-500 hover:text-indigo-500 hover:border-indigo-500/30 transition-colors shadow-sm">
-                <Twitter size={16} />
-              </a>
-              <a href="https://github.com/Keshariiii" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors shadow-sm">
+              <a href="https://github.com/Keshariiii/edunest" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors shadow-sm">
                 <Github size={16} />
               </a>
             </div>
