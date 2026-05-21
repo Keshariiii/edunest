@@ -179,12 +179,9 @@ const LandingPage = ({ onGetStarted }) => {
         
         <div className="relative max-w-5xl mx-auto px-6">
           <div className="flex flex-col items-center text-center gap-6 mb-12">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/20">
-                <GraduationCap className="text-white" size={18} />
-              </div>
-              <span className="font-bold text-lg text-gray-900 dark:text-white tracking-tight">EduNest</span>
-              <Sparkles size={12} className="text-indigo-400 opacity-80" />
+            <div className="flex items-center justify-center">
+              <img src="/logo-light.png" alt="EduNest Logo" className="h-14 w-auto block dark:hidden object-contain rounded-xl shadow-sm" />
+              <img src="/logo-dark.png" alt="EduNest Logo" className="h-14 w-auto hidden dark:block object-contain rounded-xl shadow-sm" />
             </div>
             
             <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed max-w-sm">

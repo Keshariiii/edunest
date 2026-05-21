@@ -64,12 +64,9 @@ const Navbar = ({
     return (
       <nav className="fixed top-0 inset-x-0 z-50 h-[56px] bg-white dark:bg-[#0d0d0d] border-b border-gray-200 dark:border-[#1e1e1e] flex items-center justify-between px-5 shadow-sm no-print">
         {/* Logo */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 flex items-center justify-center ring-1 ring-indigo-400/30 dark:ring-0 shadow shadow-indigo-500/40">
-            <GraduationCap size={13} style={{ color: '#ffffff' }} />
-          </div>
-          <span className="font-bold text-sm tracking-tight text-gray-900 dark:text-white">EduNest</span>
-          <Sparkles size={9} className="text-indigo-400 opacity-70 animate-pulse" />
+        <div className="flex items-center">
+          <img src="/logo-light.png" alt="EduNest" className="h-8 w-auto block dark:hidden object-contain rounded-md" />
+          <img src="/logo-dark.png" alt="EduNest" className="h-8 w-auto hidden dark:block object-contain rounded-md" />
         </div>
 
         {/* Center — fullscreen label */}
@@ -123,13 +120,10 @@ const Navbar = ({
           className="flex items-center gap-3 group focus:outline-none"
           title="Return to Home"
         >
-          {/* Badge — gradient with ring in light mode for contrast */}
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 flex items-center justify-center ring-1 ring-indigo-400/30 dark:ring-0 shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 group-hover:scale-105 transition-all duration-200">
-            <GraduationCap size={18} style={{ color: '#ffffff' }} />
-          </div>
-          <div className="relative flex items-center gap-1">
-            <span className="font-bold text-lg tracking-tight text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-200 transition-colors duration-200">EduNest</span>
-            <Sparkles size={9} className="text-indigo-500 dark:text-indigo-400 opacity-80 animate-pulse" />
+          {/* Logo Images */}
+          <div className="flex items-center transform group-hover:scale-105 transition-all duration-200">
+            <img src="/logo-light.png" alt="EduNest Logo" className="h-12 w-auto block dark:hidden object-contain rounded-xl shadow-sm" />
+            <img src="/logo-dark.png" alt="EduNest Logo" className="h-12 w-auto hidden dark:block object-contain rounded-xl shadow-sm" />
           </div>
         </button>
 

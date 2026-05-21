@@ -32,14 +32,9 @@ const Footer = () => {
             {/* Bottom Center & Very Bottom Layers */}
             <div className="flex flex-col items-center pt-8 border-t border-white/10">
               {/* Bottom Center (Logo) */}
-              <div className="flex items-center justify-center gap-3 group cursor-pointer mb-8">
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.2)] group-hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] transition-all border border-white/20">
-                  <GraduationCap className="text-gray-900 dark:text-white" size={24} />
-                </div>
-                <div className="relative flex items-center">
-                  <span className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight font-sans">EduNest</span>
-                  <Sparkles size={16} className="absolute -top-2 -right-4 text-indigo-400 opacity-90 animate-pulse" />
-                </div>
+              <div className="flex items-center justify-center mb-8 transform group-hover:scale-105 transition-all duration-300">
+                <img src="/logo-light.png" alt="EduNest Logo" className="h-20 md:h-24 w-auto block dark:hidden object-contain rounded-2xl shadow-sm" />
+                <img src="/logo-dark.png" alt="EduNest Logo" className="h-20 md:h-24 w-auto hidden dark:block object-contain rounded-2xl shadow-sm" />
               </div>
 
               {/* Very Bottom Layer (Legal) */}

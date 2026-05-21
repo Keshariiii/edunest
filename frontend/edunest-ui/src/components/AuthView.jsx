@@ -170,16 +170,11 @@ export default function AuthView({ onAuthSuccess, initialMode = 'login', onBack 
       )}
       <div className="w-full max-w-md">
 
-        {/* Logo + Tagline */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2.5 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-              <GraduationCap size={22} style={{ color: '#ffffff' }} />
-            </div>
-            <span className="font-bold text-2xl tracking-tight text-gray-900 dark:text-white">
-              Edu<span className="text-indigo-600 dark:text-indigo-400">Nest</span>
-            </span>
-            <Sparkles size={12} className="text-indigo-400 opacity-70 animate-pulse" />
+        {/* Logo */}
+        <div className="text-center mb-8 flex flex-col items-center">
+          <div className="flex items-center justify-center mb-4">
+            <img src="/logo-light.png" alt="EduNest Logo" className="h-20 w-auto block dark:hidden object-contain rounded-2xl shadow-sm" />
+            <img src="/logo-dark.png" alt="EduNest Logo" className="h-20 w-auto hidden dark:block object-contain rounded-2xl shadow-sm" />
           </div>
           <p className="font-mono text-xs text-gray-500 dark:text-gray-600 uppercase tracking-widest">
             {mode === 'login' ? 'Welcome back' : mode === 'register' ? 'Create your account' : 'Reset your password'}

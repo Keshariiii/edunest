@@ -86,13 +86,7 @@ export default function Dashboard({ user, onOpenWorkshop, onOpenDoubtSolver, onO
               </div>
             )}
 
-            {/* Active Badge for AI Chatbot */}
-            {feature.id === 'doubt_solver' && feature.status === 'active' && (
-              <div className="absolute top-6 right-6 flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold uppercase tracking-wider">
-                <Sparkles size={12} />
-                NEW
-              </div>
-            )}
+            {/* Removed NEW badge for AI Chatbot */}
 
             <div className="relative z-10">
               <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-6 border ${feature.color}`}>
