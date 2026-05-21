@@ -36,8 +36,8 @@ class RegisterRequest(BaseModel):
     @classmethod
     def validate_email_format(cls, v):
         try:
-            info = validate_email(v, check_deliverability=True)
-            return info.normalized
+            info = validate_email(v, check_deliverability=False)
+            return info.normalized.lower()
         except EmailNotValidError as e:
             raise ValueError(str(e))
 
@@ -69,9 +69,27 @@ class LoginRequest(BaseModel):
     password: str
     remember_me: bool = False
 
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, v):
+        try:
+            info = validate_email(v, check_deliverability=False)
+            return info.normalized.lower()
+        except EmailNotValidError as e:
+            raise ValueError(str(e))
+
 
 class ForgotPasswordRequest(BaseModel):
     email: str
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, v):
+        try:
+            info = validate_email(v, check_deliverability=False)
+            return info.normalized.lower()
+        except EmailNotValidError as e:
+            raise ValueError(str(e))
 
 
 class ResetPasswordRequest(BaseModel):

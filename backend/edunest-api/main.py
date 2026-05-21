@@ -40,9 +40,63 @@ app.add_middleware(
 )
 
 # ── Database initialization ─────────────────────────────────────────────────────
-from database import engine, Base
+from database import engine, Base, SessionLocal
 from models import User, PasswordResetToken, RefreshToken, FailedLoginAttempt
 Base.metadata.create_all(bind=engine)
+
+
+def lowercase_existing_emails(session_factory=None):
+    """One-time startup migration: normalise every stored email to lowercase.
+
+    If two accounts share the same email after lowercasing (e.g. User@x.com and
+    user@x.com), the *newest* account (highest id) keeps the clean lowercase
+    email, while older duplicates are renamed to ``{username}_dup_{id}@domain``
+    so the UNIQUE constraint is not violated.
+
+    Args:
+        session_factory: Optional SQLAlchemy sessionmaker. Defaults to the
+            module-level ``SessionLocal`` when None (production path).
+    """
+    if session_factory is None:
+        session_factory = SessionLocal
+    db = session_factory()
+    try:
+        users = db.query(User).order_by(User.id.desc()).all()
+        seen: dict[str, int] = {}          # lowercase email → user.id that owns it
+        changed = 0
+        for user in users:
+            lower = user.email.lower()
+            if lower in seen:
+                # This is an older duplicate — rename it
+                local, _, domain = lower.partition("@")
+                user.email = f"{user.username}_dup_{user.id}@{domain}"
+                changed += 1
+                print(f"[EMAIL MIGRATION] Renamed duplicate id={user.id} to {user.email}")
+            else:
+                seen[lower] = user.id
+                if user.email != lower:
+                    user.email = lower
+                    changed += 1
+        # Also lowercase FailedLoginAttempt emails
+        attempts = db.query(FailedLoginAttempt).all()
+        for attempt in attempts:
+            low = attempt.email.lower()
+            if attempt.email != low:
+                attempt.email = low
+                changed += 1
+        if changed:
+            db.commit()
+            print(f"[EMAIL MIGRATION] Lowercased {changed} record(s).")
+        else:
+            print("[EMAIL MIGRATION] All emails already lowercase — nothing to do.")
+    except Exception as e:
+        db.rollback()
+        print(f"[EMAIL MIGRATION] Error: {e}")
+    finally:
+        db.close()
+
+
+lowercase_existing_emails()
 
 # ── Auth routes ─────────────────────────────────────────────────────────────────
 from auth_routes import router as auth_router, user_router
