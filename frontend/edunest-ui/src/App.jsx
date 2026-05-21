@@ -16,6 +16,7 @@ import OfflinePage from './components/OfflinePage';
 import Dashboard from './components/Dashboard';
 import DoubtSolver from './components/DoubtSolver';
 import StudyTimer from './components/StudyTimer';
+import EduQuest from './components/EduQuest';
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
@@ -417,6 +418,7 @@ export default function App() {
   const isDashboardView = view === 'dashboard';
   const isDoubtSolverView = view === 'doubt_solver';
   const isStudyTimerView = view === 'study_timer';
+  const isEduQuestView = view === 'eduquest';
   const isWorkshopView = view === 'app';
   const inResults = results !== null;
 
@@ -595,6 +597,7 @@ export default function App() {
             onOpenWorkshop={() => setView('app')}
             onOpenDoubtSolver={() => setView('doubt_solver')}
             onOpenStudyTimer={() => setView('study_timer')}
+            onOpenEduQuest={() => setView('eduquest')}
           />
         )}
 
@@ -606,6 +609,11 @@ export default function App() {
         {/* ── STUDY TIMER ────────────────────────────────────────────── */}
         {isStudyTimerView && !isFullscreen && !showAnalytics && (
           <StudyTimer onBack={() => setView('dashboard')} />
+        )}
+
+        {/* ── EDUQUEST (PDF Reader & Gamified Study Scheduler) ────────── */}
+        {isEduQuestView && !isFullscreen && !showAnalytics && (
+          <EduQuest onBack={() => setView('dashboard')} user={user} />
         )}
 
         {/* ── WORKSPACE (Upload Tool) ───────────────────────────────────── */}

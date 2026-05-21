@@ -137,14 +137,14 @@ const Navbar = ({
         <div className="flex items-center gap-2 text-sm font-mono">
 
           {/* Back Button */}
-          {(showAnalytics || view === 'profile' || view === 'app' || view === 'study_timer') && (
+          {(showAnalytics || view === 'profile' || view === 'app' || view === 'study_timer' || view === 'eduquest') && (
             <button
               onClick={() => {
                 if (showAnalytics) {
                   setShowAnalytics(false);
                 } else if (view === 'profile') {
                   setView(user ? 'dashboard' : 'landing');
-                } else if (view === 'study_timer') {
+                } else if (view === 'study_timer' || view === 'eduquest') {
                   setView('dashboard');
                 } else if (view === 'app') {
                   if (results !== null) {

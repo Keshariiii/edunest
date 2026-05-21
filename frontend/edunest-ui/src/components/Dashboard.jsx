@@ -1,7 +1,7 @@
 import React from 'react';
 import { BookOpen, BrainCircuit, Timer, LineChart, Sparkles, ArrowRight, Lock } from 'lucide-react';
 
-export default function Dashboard({ user, onOpenWorkshop, onOpenDoubtSolver, onOpenStudyTimer }) {
+export default function Dashboard({ user, onOpenWorkshop, onOpenDoubtSolver, onOpenStudyTimer, onOpenEduQuest }) {
   const firstName = user?.username || 'Student';
 
   const features = [
@@ -36,13 +36,14 @@ export default function Dashboard({ user, onOpenWorkshop, onOpenDoubtSolver, onO
       status: 'active'
     },
     {
-      id: 'analytics',
-      title: 'Performance Analytics',
-      description: 'Track your quiz scores, identify weak areas, and monitor your learning progress over time.',
+      id: 'eduquest',
+      title: 'EduQuest: Smart Reader & Gamified Scheduler',
+      description: 'Interact with PDFs using 3D page folds, freehand drawings, and sync tasks to a gamified SQLite study scheduler.',
       icon: <LineChart className="w-6 h-6 text-rose-500 dark:text-rose-400" />,
       color: 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/20',
-      action: null,
-      status: 'coming_soon'
+      action: onOpenEduQuest,
+      actionText: 'Open EduQuest',
+      status: 'active'
     }
   ];
 
