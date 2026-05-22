@@ -131,19 +131,4 @@ export const InlineSpinner = ({ size = 16 }) => (
   </svg>
 );
 
-// ─── Offline Banner (connection lost) ──────────────────────────────────────────
-export const OfflineBanner = () => (
-  <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[300] w-full max-w-sm mx-auto animate-in slide-in-from-top-4 duration-300">
-    <div className="bg-white dark:bg-[#0a0a0a] border border-red-500/40 rounded-xl shadow-2xl px-5 py-4 flex items-start gap-4">
-      <div className="shrink-0 w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5">
-          <path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0119 12.55M5 12.55a10.94 10.94 0 015.17-2.39M10.71 5.05A16 16 0 0122.58 9M1.42 9a15.91 15.91 0 014.7-2.88M8.53 16.11a6 6 0 016.95 0M12 20h.01" />
-        </svg>
-      </div>
-      <div className="flex-1 min-w-0 pt-0.5">
-        <p className="font-bold text-gray-900 dark:text-white text-sm">You are offline</p>
-        <p className="text-gray-500 text-xs mt-1 leading-relaxed">Changes won't be saved and generation will fail. Please check your internet connection.</p>
-      </div>
-    </div>
-  </div>
-);
+

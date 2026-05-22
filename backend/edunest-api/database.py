@@ -2,14 +2,18 @@
 Database engine and session management for EduNest.
 Uses SQLite stored alongside the API for simplicity.
 """
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATABASE_URL = "sqlite:///./edunest.db"
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./edunest.db")
+
+# Only use check_same_thread for SQLite
+connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False},  # required for SQLite + FastAPI
+    connect_args=connect_args,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

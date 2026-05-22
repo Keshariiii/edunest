@@ -8,6 +8,7 @@ httpx
 pillow
 sqlalchemy
 passlib[bcrypt]
+bcrypt
 python-jose[cryptography]
 email-validator
 python-docx

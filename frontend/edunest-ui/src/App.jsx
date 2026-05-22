@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calculator, FileText, Layers, Minimize, BrainCircuit, AlertTriangle, RefreshCw, BookOpen, Tag } from 'lucide-react';
-import { AppLoading, SlowNetworkBanner, OfflineBanner } from './components/SkeletonLoader';
+import { AppLoading, SlowNetworkBanner } from './components/SkeletonLoader';
 
 import Navbar from './components/Navbar';
 import LandingPage from './components/LandingPage';
@@ -12,7 +12,6 @@ import QuizTab from './components/QuizTab';
 import AnalyticsPanel from './components/AnalyticsPanel';
 import AuthView from './components/AuthView';
 import UserProfile from './components/UserProfile';
-import OfflinePage from './components/OfflinePage';
 import Dashboard from './components/Dashboard';
 import DoubtSolver from './components/DoubtSolver';
 import StudyTimer from './components/StudyTimer';
@@ -75,7 +74,6 @@ export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem('edunest_access_token'));
   const [authLoading, setAuthLoading] = useState(true);
   const [slowNetwork, setSlowNetwork] = useState(false);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   const [subject, setSubject] = useState(() => {
     try { return localStorage.getItem('edunest_subject') || ''; } catch { return ''; }
@@ -118,24 +116,15 @@ export default function App() {
   // Global Network Status
   useEffect(() => {
     const handleOnline = () => {
-      setIsOffline(false);
-      setShowBackOnline(true);
-      setTimeout(() => setShowBackOnline(false), 3500);
       setUploadError(null);
       // NEVER redirect when results are already cached — just restore connectivity silently.
       const hasResults = !!localStorage.getItem('edunest_cached_results');
       if (hasResults) return;  // <- key guard: do nothing if user has materials
       if (view === 'landing' || view === 'loading') checkAuth();
     };
-    const handleOffline = () => {
-      setIsOffline(true);
-      setShowBackOnline(false);
-    };
     window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
     return () => {
       window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
     };
   }, [view]);
 
@@ -430,10 +419,9 @@ export default function App() {
       {view === 'loading' && <AppLoading message="Restoring your workspace" detail="Verifying your session…" />}
 
       {/* ── SLOW NETWORK BANNER ──────────────────────────────────────────── */}
-      {slowNetwork && !isOffline && <SlowNetworkBanner onRetry={() => window.location.reload()} />}
+      {slowNetwork && <SlowNetworkBanner onRetry={() => window.location.reload()} />}
 
-      {/* ── OFFLINE BANNER ──────────────────────────────────────────────── */}
-      {isOffline && <OfflineBanner />}
+
 
       {/* Fixed background decorations */}
       <div className="fixed inset-0 z-0 pointer-events-none no-print">
@@ -560,12 +548,10 @@ export default function App() {
 
         {/* ── LANDING PAGE ──────────────────────────────────────────────── */}
         {isLandingView && !showAnalytics && (
-          isOffline
-            ? <OfflinePage onRetry={() => window.location.reload()} />
-            : <LandingPage onGetStarted={() => {
-                if (user) setView('dashboard');
-                else setView('login');
-              }} />
+          <LandingPage onGetStarted={() => {
+            if (user) setView('dashboard');
+            else setView('login');
+          }} />
         )}
 
         {/* ── AUTHENTICATION ────────────────────────────────────────────── */}
@@ -632,7 +618,6 @@ export default function App() {
               loading={loading}
               handleGenerateBase={handleGenerateBase}
               onBack={() => setView('landing')}
-              isOffline={isOffline}
               rateLimitCooldown={rateLimitCooldown}
             />
           </div>
@@ -728,8 +713,8 @@ export default function App() {
                   <div className="no-print flex justify-end mb-3">
                     <button
                       onClick={() => handleRegenerateSection(activeTab === 'notes' ? 'notes' : activeTab)}
-                      disabled={!!regeneratingSection || filesLostAfterRefresh || isOffline}
-                      title={filesLostAfterRefresh ? 'Re-upload your file to regenerate' : isOffline ? 'Offline — cannot regenerate' : ''}
+                      disabled={!!regeneratingSection || filesLostAfterRefresh}
+                      title={filesLostAfterRefresh ? 'Re-upload your file to regenerate' : ''}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-400/40 dark:hover:border-indigo-500/30 font-mono text-[11px] transition-all disabled:opacity-40 shadow-sm"
                     >
                       <RefreshCw size={11} className={regeneratingSection === activeTab ? 'animate-spin text-indigo-500' : ''} />
@@ -749,7 +734,6 @@ export default function App() {
                     toggleFullscreen={toggleFullscreen}
                     mainContainerRef={mainContainerRef}
                     onQuizComplete={handleQuizComplete}
-                    isOffline={isOffline}
                   />
                 )}
               </div>

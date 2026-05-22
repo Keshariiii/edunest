@@ -61,7 +61,6 @@ const HeroSection = ({
   uploadError,
   loading,
   handleGenerateBase,
-  isOffline = false,
   rateLimitCooldown = 0,
 }) => {
   return (
@@ -201,19 +200,17 @@ const HeroSection = ({
           ) : (
             <button
               onClick={handleGenerateBase}
-              disabled={loading || isOffline || rateLimitCooldown > 0}
+              disabled={loading || rateLimitCooldown > 0}
               className={`w-full py-3 rounded-xl font-semibold text-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 group shadow-sm ${
-                isOffline || rateLimitCooldown > 0
+                rateLimitCooldown > 0
                   ? 'bg-gray-200 dark:bg-[#1a1a1a] text-gray-400 dark:text-gray-600 cursor-not-allowed'
                   : 'bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100'
               }`}
             >
-              {isOffline
-                ? 'Offline — Check Connection'
-                : rateLimitCooldown > 0
+              {rateLimitCooldown > 0
                   ? `⏳ Retry in ${rateLimitCooldown}s`
                   : 'Initialize Processing'}
-              {!isOffline && rateLimitCooldown === 0 && (
+              {rateLimitCooldown === 0 && (
                 <span className="font-mono text-xs bg-gray-700 dark:bg-gray-200 text-gray-200 dark:text-gray-800 px-1.5 py-0.5 rounded group-hover:bg-gray-600 dark:group-hover:bg-gray-300 transition-colors">⏎</span>
               )}
             </button>
