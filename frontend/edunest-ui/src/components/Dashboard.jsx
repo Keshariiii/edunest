@@ -1,7 +1,7 @@
 import React from 'react';
-import { BookOpen, BrainCircuit, Timer, LineChart, Sparkles, ArrowRight, Lock } from 'lucide-react';
+import { BookOpen, BrainCircuit, Sparkles, ArrowRight, Lock } from 'lucide-react';
 
-export default function Dashboard({ user, onOpenWorkshop, onOpenDoubtSolver, onOpenStudyTimer, onOpenEduQuest }) {
+export default function Dashboard({ user, onOpenWorkshop, onOpenDoubtSolver }) {
   const firstName = user?.username || 'Student';
 
   const features = [
@@ -25,26 +25,6 @@ export default function Dashboard({ user, onOpenWorkshop, onOpenDoubtSolver, onO
       actionText: 'Open AI Chatbot',
       status: 'active'
     },
-    {
-      id: 'study_timer',
-      title: 'Study Timer',
-      description: 'Track focus sessions, set intervals, and optimize your study flow with an interactive stopwatch and countdown timer.',
-      icon: <Timer className="w-6 h-6 text-amber-500 dark:text-amber-400" />,
-      color: 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20',
-      action: onOpenStudyTimer,
-      actionText: 'Open Study Timer',
-      status: 'active'
-    },
-    {
-      id: 'eduquest',
-      title: 'EduQuest: Smart Reader & Gamified Scheduler',
-      description: 'Interact with PDFs using 3D page folds, freehand drawings, and sync tasks to a gamified SQLite study scheduler.',
-      icon: <LineChart className="w-6 h-6 text-rose-500 dark:text-rose-400" />,
-      color: 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/20',
-      action: onOpenEduQuest,
-      actionText: 'Open EduQuest',
-      status: 'active'
-    }
   ];
 
   return (
